@@ -13,8 +13,16 @@
 - clone repo: `git clone git@github.com:webmastersmith/Rated-G.git`
 - copy videos and subtitles into same diretory you just downloaded.
   - subtitles must have the same name as the video, with an `.srt` extension.
+  - (e.g. `video1.mp4`, `video1.srt`)
 - run from command line in same directory: `node clean.js`
+
+## Subtitles
+
+- most video subtitles can be found online. Make sure the subtitle matches the video. Cuts to video will be wrong if subtitle is wrong.
+- Error about reading subtitles:
+  - Check the file name is not same as videos.
+  - The file header is possible corrupted. Copy contents to new file and save. Delete old file.
 
 ## FFmpeg Encoding
 
-- I use GPU encoding with Nvidia. If you get errors, fix arguments in the encode function.
+- I use GPU encoding with Nvidia. If you get errors, fix arguments in the **encodeVideo** function.
