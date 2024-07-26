@@ -1,4 +1,3 @@
-// todo -fix timestamp on clean_srt.
 (async function () {
   const fs = require('fs');
   const swearWords = require('./swear-words.json');
