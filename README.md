@@ -11,7 +11,7 @@
 ## Simple Start
 
 - clone repo: `git clone git@github.com:webmastersmith/Rated-G.git`
-- copy videos and subtitles into same diretory you just downloaded.
+- copy videos and subtitles into same directory you just downloaded.
   - subtitles must have the same name as the video, with an `.srt` extension.
   - (e.g. `video1.mp4`, `video1.srt`)
 - run from command line in same directory: `node clean.js`
