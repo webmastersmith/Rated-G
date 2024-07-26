@@ -1,6 +1,7 @@
 # Rated-G
 
 - Simple script that extracts swear words from the subtitles and cuts those lines out of the video. Inspired by [Video Swear Jar](https://github.com/jveldboom/video-swear-jar).
+- Subtitles are more accurate than AI transcribing.
 
 ## Dependancies
 
@@ -19,9 +20,17 @@
 ## Subtitles
 
 - most video subtitles can be found online. Make sure the subtitle matches the video. Cuts to video will be wrong if subtitle is wrong.
-- Error about reading subtitles:
+- **Error** about reading subtitles:
   - Check the file name is not same as videos.
   - The file header is possible corrupted. Copy contents to new file and save. Delete old file.
+- **Extra Cuts**
+  - if you would like to take out other parts (e.g. nudity, drugs, violence...), add the time to the subtitles file.
+
+```txt
+6
+00:00:34,000 --> 00:01:56,000
+!remove!
+```
 
 ## FFmpeg Encoding
 
