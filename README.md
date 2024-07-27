@@ -27,11 +27,41 @@
   - if you would like to take out other parts (e.g. nudity, drugs, violence...), add the time to the subtitles file.
 
 ```txt
-6
-00:00:34,000 --> 00:01:56,000
-!remove!
+6   <-- any number. must be a number -->
+00:00:34,000 --> 00:01:56,000   <-- hours:minutes:seconds,milliseconds -->
+!remove! <-- special key word -->
 ```
 
 ## FFmpeg Encoding
 
-- I use GPU encoding with Nvidia. If you get errors, fix arguments in the **encodeVideo** function.
+- Encoding is the process of parsing the input and putting it in a format(codec) with fixed timeline.
+- Once the video is cut, the timeline is broken. This can cause the audio and video to be out of sync. Encoding fixes this.
+- GPU encoding is more than ten times faster than CPU encoding. The script is already setup for encoding with Nvidia GPU. If you get errors, find the codec that works for your pc hardware and fix the arguments in the **encodeVideo** function.
+
+```js
+// GPU example
+const args = [
+  '-y',
+  '-hwaccel', 'cuda',
+  '-i', joinedVideoName,
+  '-i', subTitleName,
+  '-c:v', 'nvenc_hevc',
+  '-preset', 'fast',
+  '-c:a', 'aac',
+  '-b:a', '128k',
+  '-c:s', 'mov_text',
+  '-metadata:s:s:0', 'language=eng',
+  cleanVideoName
+]
+
+// CPU example
+const args = [
+  '-y',
+  '-i', joinedVideoName,
+  '-i', subTitleName,
+  '-c:v', 'libx264',
+  '-crf', 26,
+  '-c:a', 'aac', '48k',
+  cleanVideoName
+]
+```
