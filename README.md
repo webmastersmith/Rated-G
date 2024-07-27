@@ -19,17 +19,21 @@
 
 ## Subtitles
 
-- most video subtitles can be found online. Make sure the subtitle matches the video. Cuts to video will be wrong if subtitle is wrong.
+- Most video subtitles can be found online. Make sure the subtitle matches the video. Cuts to video will be wrong if subtitle is wrong.
 - **Error** about reading subtitles:
   - Check the file name is not same as videos.
   - The file header is possible corrupted. Copy contents to new file and save. Delete old file.
 - **Extra Cuts**
-  - if you would like to take out other parts (e.g. nudity, drugs, violence...), add the time to the subtitles file.
+  - If you would like to take out other parts (e.g. nudity, drugs, violence...), add the time to the subtitles file.
+  - `6` <-- any number. must be a number -->
+  - `00:00:34,000 --> 00:01:56,000`   <-- hours:minutes:seconds,milliseconds -->
+    - Do not let times overlap with other subtitles. Remove the subtitles within the cut section.
+  - `!remove!` <-- special key word -->
 
 ```txt
-6   <-- any number. must be a number -->
-00:00:34,000 --> 00:01:56,000   <-- hours:minutes:seconds,milliseconds -->
-!remove! <-- special key word -->
+6
+00:00:34,000 --> 00:01:56,000
+!remove!
 ```
 
 ## FFmpeg Encoding
