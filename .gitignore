@@ -1,3 +1,10 @@
 .whisper
 convert_video.js
 extract_srt.js
+*.txt
+*.srt
+*.mp4
+*.avi
+*.webm
+*.mkv
+avoid*

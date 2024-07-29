@@ -1,0 +1,422 @@
+const fs = require('fs');
+const swearWords = require('./swear-words.json');
+
+const args = getArgs();
+
+/**
+ * Subtract or add floats.
+ * @param {string} operator +|-
+ * @param {float} sec1 Seconds.milliseconds
+ * @param {float} sec2 Seconds.milliseconds
+ * @returns float. seconds.milliseconds to third decimal place.
+ */
+function addSubtractSec(operator = '-', sec1, sec2) {
+  const t1 = fixDecimal(sec1 * 1000);
+  const t2 = fixDecimal(sec2 * 1000);
+  // add
+  if (operator === '+') return Math.abs(fixDecimal((t2 + t1) / 1000));
+  // subtract
+  return Math.abs(fixDecimal((t2 - t1) / 1000));
+}
+
+/**
+ * Search text for swear words.
+ * @param {string} text -words checked for swear words.
+ * @returns boolean (true|false)
+ */
+function containsSwearWords(text) {
+  const pattern = swearWords.join('|');
+  const regex = new RegExp(`\\b(?:${pattern})\\b`, 'i'); // 'i' flag for case-insensitive matching
+  if (regex.test(text) || /!remove!/.test(text)) return true;
+  return false;
+}
+
+/**
+ * Async file deletion.
+ * @param {string[]} files File names to be deleted.
+ */
+function deleteFiles(files) {
+  for (const file of files) {
+    fs.unlink(file, (e) => {
+      if (e) throw Error(e);
+      console.log('\x1b[34m', `${file} was deleted`);
+      console.log('\x1b[0m', '');
+    });
+  }
+}
+
+/**
+ * ffmpeg encodes concatenated video. Fixes timestamp with audio and video.
+ * @param {string} name Video name without extension.
+ * @param {string} joinedVideoName Name of video.ext that needs encoding.
+ * @param {boolean} subTitles true|false. Do you need to embed subtitles.
+ * @returns string: Clean video name.
+ */
+async function encodeVideo(name, joinedVideoName, subTitles = false) {
+  // const cleanVideoName = `${name}-clean.mp4`
+  const cleanVideoName = `${name}-clean.mp4`;
+  if (args['no-encode']) return cleanVideoName;
+  const subTitleName = `${name}-clean.srt`;
+  // prettier-ignore
+  const encodeArgs = [
+    '-y',
+    '-hide_banner',
+    '-v', 'error', '-stats',
+    '-hwaccel', 'cuda',
+    '-i', joinedVideoName,
+    '-c:v', 'nvenc_hevc',
+    '-preset', 'fast',
+    '-c:a', 'aac',
+    '-b:a', '128k',
+    cleanVideoName
+  ]
+  // add subtitles if exist.
+  if (subTitles) {
+    // insert subtitle name after video input.
+    encodeArgs.splice(encodeArgs.indexOf(joinedVideoName) + 1, 0, '-i', subTitleName);
+    // add rest of subtitle data.
+    encodeArgs.splice(-1, 0, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
+  }
+  await spawnShell('ffmpeg', encodeArgs);
+  return cleanVideoName;
+}
+
+/**
+ * Because JavaScript math can return precision floating point numbers, this corrects the float to a set decimal point.
+ * pass in a number after performing math operation. Fixes float to the third decimal point.
+ * @param {float} num float
+ * @returns float: same number, corrected to third decimal point.
+ */
+function fixDecimal(num) {
+  return +(Math.round(num + 'e+3') + 'e-3');
+}
+
+/**
+ * Compares each frame number to see if it is 'between' the two numbers.
+ * The 'between' function acts as a filter: current frame time between the two numbers, frame is passed to encoder.
+ * @param {string} name Video name without extension.
+ * @param {string} ext Video extension.
+ * @param {string[]} cuts  Video remove sections. {start, end}.
+ * @returns Clean video name.
+ */
+async function filterGraphAndEncode(name, ext, cuts, subtitleName = '') {
+  const cleanVideoName = `${name}-clean.mp4`;
+  const video = `${name}.${ext}`;
+  // select frames was taken from: https://github.com/rooty0/ffmpeg_video_cutter/tree/master
+  // prettier-ignore
+  const filterGraphArgs = [
+    '-y',
+    // '-report',
+    '-hide_banner',
+    '-v', 'error', '-stats',
+    '-hwaccel', 'cuda',
+    '-i', video,
+    '-vf', `select='${cuts.join('+')}', setpts=N/FRAME_RATE/TB`,
+    '-af', `aselect='${cuts.join('+')}', asetpts=N/SAMPLE_RATE/TB`,
+    '-c:v', 'hevc_nvenc',
+    '-preset', 'fast',
+    '-c:a', 'aac',
+    '-b:a', '112k',
+    cleanVideoName
+  ]
+  // add subtitles if exist.
+  if (subtitleName) {
+    // insert subtitle name after video name.
+    filterGraphArgs.splice(filterGraphArgs.indexOf(video) + 1, 0, '-i', subtitleName);
+    // add rest of subtitle data.
+    filterGraphArgs.splice(-1, 0, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
+  }
+
+  await spawnShell('ffmpeg', filterGraphArgs);
+  return cleanVideoName;
+}
+
+/**
+ * Convert cmd line arguments into an object.
+ * @returns object: { key1: value, key2: value }
+ *  -if argument passed without value, value will be true.
+ */
+function getArgs() {
+  // arguments.
+  // console.log('process', process.argv);
+  const args = Object.fromEntries(
+    process.argv
+      .slice(2)
+      .join(' ')
+      .split(/ -{1,2}/)
+      .map((arg) => {
+        // console.log('arg', arg);
+        const kv = arg
+          .trim()
+          .replace(/^-{1,2}/, '')
+          .split(/\s|=/);
+        // console.log('kv', kv);
+        if (kv.length < 2) kv.push(true);
+        return kv;
+      })
+      .filter((arg) => !!arg[0])
+  );
+  if (args.debug) console.log('args', args);
+  return args;
+}
+
+/**
+ * Use subtitles file to find swear words, and timestamps. Create video slice timestamps and clean subtitles file.
+ * @param {string} video Video name and extension.
+ * @param {string} srtFile Name of subtitle file.
+ * @returns object: { newSrt, cutArr, cutTxt }
+ */
+async function getCuts(name, ext, srtFile) {
+  // turn subtitles into string[].
+  const subtitles = splitSubtitles(srtFile);
+
+  // new srt.
+  const newSrtArr = [];
+  // track cut words
+  const cutTxtArr = [];
+  // keep track of cut time for subtitle alignment.
+  let totalSecondsRemoved = 0;
+  // invert cuts
+  const keeps = [];
+  let s = 0;
+  for (const { id, start, end, text } of subtitles) {
+    const startSeconds = Math.floor(timeToSeconds(start));
+    const endSeconds = Math.ceil(timeToSeconds(end));
+    if (containsSwearWords(text)) {
+      // invert cuts.
+      if (startSeconds === 0) {
+        s = endSeconds;
+        totalSecondsRemoved += Math.abs(endSeconds - startSeconds);
+      } else {
+        keeps.push(`between(t,${s},${startSeconds})`);
+        s = endSeconds;
+        totalSecondsRemoved += Math.abs(endSeconds - startSeconds);
+      }
+      // save timestamp of cut words.
+      cutTxtArr.push({ id, start, end, text });
+    } else {
+      // no swear words in line.
+      // Fix subtitle times to align with cut movie.
+      const startFix = secondsToTime(addSubtractSec('-', timeToSeconds(start), totalSecondsRemoved));
+      const endFix = secondsToTime(addSubtractSec('-', timeToSeconds(end), totalSecondsRemoved));
+      // push clean srt.
+      newSrtArr.push({ id, start: startFix, end: endFix, text });
+    }
+  }
+  // push to end of video
+  const duration = await getVideoDuration(`${name}.${ext}`);
+  if (s < duration) keeps.push(`between(t,${s},${duration})`);
+
+  // create new srt file.
+  const newSrt = newSrtArr
+    .map((b, idx) => ({ ...b, id: idx + 1 }))
+    .reduce((acc, cur) => {
+      const { id, start, end, text } = cur;
+      return (acc += `${id}
+${start} --> ${end}
+${text}
+
+`);
+    }, '');
+  // write the file.
+  const cleanSubtitleName = `${name}-clean.srt`;
+  fs.writeFileSync(cleanSubtitleName, newSrt);
+
+  // Create string of cut words.
+  const cutTxt = cutTxtArr.reduce((acc, cur) => {
+    const { id, start, end, text } = cur;
+    return (acc += `${start} - ${end} \t${text.replace(/\r?\n/, ' ')}\n`);
+  }, '');
+  // write the file -async
+  fs.writeFile(`${name}_cut_words.txt`, cutTxt, (err) => {
+    if (err) throw err;
+  });
+
+  return { cleanSubtitleName, keeps };
+}
+
+/**
+ * Split video name and extension.
+ * @param {string} name video name and extension.
+ * @returns object: { name: string, ext: string }
+ */
+function getName(name) {
+  const videoName = name.split('.');
+  const ext = videoName.pop();
+  return { name: videoName.join('.'), ext };
+}
+
+/**
+ * Use ffprobe to extract video seconds.milliseconds from metadata.
+ * @param {string} video name including extension.
+ * @returns string. time in sec.milli
+ */
+async function getVideoDuration(video) {
+  // prettier-ignore
+  const durationArgs = [
+    '-v', 'error',
+    '-hide_banner',
+    '-print_format', 'json',
+    '-show_entries', 'stream=duration',
+    '-of', 'default=noprint_wrappers=1:nokey=1',
+    '-select_streams', 'v:0',
+    video
+  ]
+  const { stdout: duration } = await spawnShell('ffprobe', durationArgs);
+  if (args.debug) console.log('duration: ', duration);
+  return +duration.trim();
+}
+
+/**
+ * Filter list of files for video type, and remove temporary videos from list.
+ * @returns string[]: List of video names.
+ */
+function getVideoNames() {
+  const vidext = ['\\.mp4$', '\\.mkv$', '\\.avi$', '\\.webm$'];
+  const extRegex = new RegExp(vidext.join('|'));
+  const avoidVideos = ['output', 'clean', 'temp'];
+  const avoidRegex = new RegExp(avoidVideos.map((a) => vidext.map((v) => `${a}${v}`).join('|')).join('|'));
+  // console.log('regex', avoidRegex);
+  const videos = fs
+    .readdirSync(process.cwd())
+    .filter((file) => extRegex.test(file))
+    .filter((file) => !avoidRegex.test(file));
+  console.log(videos);
+  return videos;
+}
+
+/**
+ *
+ * @param {number} time Time in seconds and milliseconds
+ * @returns string. '00:00:00,000'
+ */
+function secondsToTime(time) {
+  // return timeStamp format.
+  const [sec, milli = '000'] = time.toString().split('.');
+  const hours = Math.floor(sec / 3600);
+  const hourStr = hours.toString().padStart(2, '0');
+  const minutes = Math.floor((sec % 3600) / 60);
+  const minuteStr = minutes.toString().padStart(2, '0');
+  const seconds = sec - (hours * 3600 + minutes * 60);
+  const secStr = seconds.toString().padStart(2, '0');
+  const milliStr = milli.toString().padEnd(3, '0');
+  // console.log('time', time, 'hours', hours, 'minutes', minutes, 'seconds', seconds, 'milli', milli);
+  return `${hourStr}:${minuteStr}:${secStr},${milliStr}`;
+}
+
+/**
+ * Run OS programs from Nodejs environment.
+ * @param {string} command bash command of program
+ * @param {array} spawnArgs array of arguments. -No spaces. Must be comma separated.
+ * @returns object: {stdout, stderr}
+ */
+async function spawnShell(command, spawnArgs = []) {
+  const { spawn } = require('child_process');
+  return new Promise((resolve, reject) => {
+    console.log(`running command: ${command} ${spawnArgs.join(' ')}`);
+    const process = spawn(command, spawnArgs);
+    let stdout = '';
+    let stderr = '';
+    process.stdout.on('data', (data) => {
+      console.log(data.toString());
+      stdout += data;
+    });
+    process.stderr.on('data', (data) => {
+      console.log(data.toString());
+      stderr += data;
+    });
+    process.on('close', (code) => {
+      if (code === 0) {
+        resolve({ stdout, stderr });
+      } else {
+        const error = new Error(`Command "${command} ${spawnArgs.join(' ')}" exited with code ${code}`);
+        error.code = code;
+        error.stdout = stdout;
+        error.stderr = stderr;
+        reject(error);
+      }
+    });
+    process.on('error', (error) => {
+      reject(error);
+    });
+  });
+}
+
+function splitSubtitles(subTitleName) {
+  const srt = fs.readFileSync(subTitleName, 'utf-8');
+  // read srt, split into blocks. -convert to object.
+  const subtitles = srt.split(/\r?\n\r?\n\d{1,5}\r?\n?$/m).map((block, idx) => {
+    // console.log('block', block);
+    let rawTime = '';
+    let text = '';
+    // first line will keep id
+    if (idx > 0) {
+      [rawTime, ...text] = block.trim().split(/\r?\n/);
+    } else {
+      [_, rawTime, ...text] = block.trim().split(/\r?\n/);
+    }
+    // console.log('rawTime', rawTime, 'text', text);
+    const [start, end] = rawTime.split(' --> ');
+    return {
+      id: idx + 1,
+      start,
+      end,
+      text: text.join('\n').trim(),
+    };
+  });
+  if (args.debug) console.log(subtitles);
+  return subtitles;
+}
+
+/**
+ * Convert time as string into seconds.milliseconds
+ * @param {string} time '00:00:00,000' hour : minute : second, millisecond
+ * @returns number. decimal to 3 places.
+ */
+function timeToSeconds(time) {
+  if (!time) return '';
+  const [hour, min, sec, milli = 0] = time.split(/:|,/);
+  // console.log(time, hour, min, sec, milli);
+  const totalSec = +hour * 60 * 60 + +min * 60 + +sec;
+  return +`${totalSec}.${milli}`;
+}
+
+/**
+ * Docker must be running. Pulls the Video-Swear-Jar image. AI transcribes the audio to text and outputs a clean version of video.
+ * @param {string} video Video name and extension.
+ * @returns object: { stdout: string stderr: string }
+ */
+async function transcribeVideo(video) {
+  if (args.debug) {
+    console.log(
+      '\x1b[35m',
+      'Could not extract subtitles.\nStarting Docker with AI transcription.\nThis will take a few minutes to transcribe video.'
+    );
+    console.log('\x1b[0m', '');
+  }
+  // prettier-ignore
+  const dockerArgs = [
+      'run', '--rm',
+      '-v', `${process.cwd()}:/data`,
+      '-v', `${process.cwd()}/.whisper:/app/.whisper`, 'jveldboom/video-swear-jar:v1',
+      'clean',
+      '--input', video,
+      '--model', 'tiny.en',
+      '--language', 'en',
+    ]
+  return await spawnShell('docker', dockerArgs);
+}
+
+module.exports = {
+  containsSwearWords,
+  deleteFiles,
+  encodeVideo,
+  filterGraphAndEncode,
+  getArgs,
+  getCuts,
+  getName,
+  getVideoDuration,
+  getVideoNames,
+  spawnShell,
+  transcribeVideo,
+};

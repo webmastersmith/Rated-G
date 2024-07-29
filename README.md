@@ -1,6 +1,6 @@
 # Rated-G
 
-- Simple script that extracts swear words from the subtitles and cuts those lines out of the video. Inspired by [Video Swear Jar](https://github.com/jveldboom/video-swear-jar).
+- Simple script that removes undesirable video and audio. Swear words are removed from the subtitles. Inspired by [Video Swear Jar](https://github.com/jveldboom/video-swear-jar).
 - Subtitles are more accurate than AI transcribing.
 
 ## Dependancies
@@ -20,15 +20,16 @@
 ## Subtitles
 
 - Most video subtitles can be found online. Make sure the subtitle matches the video. Cuts to video will be wrong if subtitle is wrong.
+- Subtitles do not provide perfect alignment, but their really close. Editing the time can make sure to remove undesirable video and audio.
 - **Error** about reading subtitles:
   - Check the file name is not same as videos.
   - The file header is possible corrupted. Copy contents to new file and save. Delete old file.
 - **Extra Cuts**
   - If you would like to take out other parts (e.g. nudity, drugs, violence...), add the time to the subtitles file.
-  - `6` <-- any number. must be a number -->
-  - `00:00:34,000 --> 00:01:56,000`   <-- hours:minutes:seconds,milliseconds -->
-    - Do not let times overlap with other subtitles. Remove the subtitles within the cut section.
-  - `!remove!` <-- special key word -->
+  - `6` <-- Can be any number, but must be a number.
+  - `00:00:34,000 --> 00:01:56,000` <-- hours:minutes:seconds,milliseconds
+    - **Caution!**. Do not let times overlap with other subtitles. Remove the subtitles within the cut section.
+  - `!remove!` <-- special key word.
 
 ```txt
 6
@@ -39,33 +40,46 @@
 ## FFmpeg Encoding
 
 - Encoding is the process of parsing the input and putting it in a format(codec) with fixed timeline.
-- Once the video is cut, the timeline is broken. This can cause the audio and video to be out of sync. Encoding fixes this.
-- GPU encoding is more than ten times faster than CPU encoding. The script is already setup for encoding with Nvidia GPU. If you get errors, find the codec that works for your pc hardware and fix the arguments in the **encodeVideo** function.
+- Once the video is cut, the timeline is broken. This can cause the audio and video to be out of sync during playback. Encoding fixes this.
+- GPU encoding is more than ten times faster than CPU encoding. The script is already setup for encoding with Nvidia GPU. If you get errors, find the codec that works for your pc hardware and fix the arguments in the **filterGraphAndEncode** function.
 
 ```js
 // GPU example
+// prettier-ignore
 const args = [
   '-y',
+  // '-report',
+  '-hide_banner',
+  '-v', 'error', '-stats',
   '-hwaccel', 'cuda',
-  '-i', joinedVideoName,
-  '-i', subTitleName,
-  '-c:v', 'nvenc_hevc',
+  '-i', video,
+  '-i', subtitleName,
+  '-vf', `select='${cuts.join('+')}', setpts=N/FRAME_RATE/TB`,
+  '-af', `aselect='${cuts.join('+')}', asetpts=N/SAMPLE_RATE/TB`,
+  '-c:v', 'hevc_nvenc',
   '-preset', 'fast',
   '-c:a', 'aac',
-  '-b:a', '128k',
-  '-c:s', 'mov_text',
-  '-metadata:s:s:0', 'language=eng',
+  '-b:a', '112k',
+  '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng',
   cleanVideoName
-]
+  ]
 
 // CPU example
+// prettier-ignore
 const args = [
   '-y',
-  '-i', joinedVideoName,
-  '-i', subTitleName,
+  // '-report',
+  '-hide_banner',
+  '-v', 'error', '-stats',
+  '-i', video,
+  '-i', subtitleName,
+  '-vf', `select='${cuts.join('+')}', setpts=N/FRAME_RATE/TB`,
+  '-af', `aselect='${cuts.join('+')}', asetpts=N/SAMPLE_RATE/TB`,
   '-c:v', 'libx264',
   '-crf', 26,
-  '-c:a', 'aac', '48k',
+  '-c:a', 'aac',
+  '-b:a', '128k',
+  '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng',
   cleanVideoName
-]
+  ]
 ```
