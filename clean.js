@@ -9,6 +9,7 @@
     getCuts,
     getName,
     getVideoNames,
+    sanitizeVideo,
     transcribeVideo,
   } = require('./utils');
 
@@ -38,14 +39,20 @@
       }
     }
 
+    // remove everything but audio and video.
+    // Why? FilterGraph will keep the embedded subtitle and not add the timestamp corrected subtitle.
+    const sanitizeVideoName = await sanitizeVideo(name, ext);
+
     // search subtitles for swear words. Create cleaned subtitles and cut points.
-    const { cleanSubtitleName, keeps } = await getCuts(name, ext, subName);
+    const { swearWordsTxtName, cleanSubtitleName, keeps } = await getCuts(name, ext, subName);
+    console.log('cleanSubtitleName: ', cleanSubtitleName);
 
     // encode video from cut points.
-    await filterGraphAndEncode(name, ext, keeps, cleanSubtitleName);
+    await filterGraphAndEncode(sanitizeVideoName, name, ext, keeps, cleanSubtitleName);
+    // await filterGraphAndEncode(name, ext, keeps, cleanSubtitleName);
 
     // delete working files.
-    const deletes = [cleanSubtitleName];
-    if (!args.debug) deleteFiles(deletes);
+    const deletes = [cleanSubtitleName, swearWordsTxtName, sanitizeVideoName];
+    // if (!args.debug) deleteFiles(deletes);
   }
 })();

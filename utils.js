@@ -82,6 +82,34 @@ async function encodeVideo(name, joinedVideoName, subTitles = false) {
 }
 
 /**
+ *
+ * @param {string} video Video name and extension.
+ * @param {string} subName output name of subtitle
+ * @param {number} subNumber location of where subtitle is found.
+ * @returns
+ */
+async function extractSubtitle(video, subName, subNumber = 0) {
+  // prettier-ignore
+  const ffmpegArgs = [
+      '-hide_banner',
+      '-v', 'error',
+      '-i', video,
+      '-map', `0:s:${subNumber}?`,
+      subName
+    ]
+  try {
+    await spawnShell('ffmpeg', ffmpegArgs);
+    console.log('\x1b[34m', `Extracted ${subName}`);
+    console.log('\x1b[0m', '');
+    return true;
+  } catch (error) {
+    console.log('No srt found!');
+    // throw Error(error)
+    return false;
+  }
+}
+
+/**
  * Because JavaScript math can return precision floating point numbers, this corrects the float to a set decimal point.
  * pass in a number after performing math operation. Fixes float to the third decimal point.
  * @param {float} num float
@@ -99,9 +127,8 @@ function fixDecimal(num) {
  * @param {string[]} cuts  Video remove sections. {start, end}.
  * @returns Clean video name.
  */
-async function filterGraphAndEncode(name, ext, cuts, subtitleName = '') {
+async function filterGraphAndEncode(video, name, ext, cuts, cleanSubtitleName = '') {
   const cleanVideoName = `${name}-clean.mp4`;
-  const video = `${name}.${ext}`;
   // select frames was taken from: https://github.com/rooty0/ffmpeg_video_cutter/tree/master
   // prettier-ignore
   const filterGraphArgs = [
@@ -120,9 +147,9 @@ async function filterGraphAndEncode(name, ext, cuts, subtitleName = '') {
     cleanVideoName
   ]
   // add subtitles if exist.
-  if (subtitleName) {
+  if (cleanSubtitleName) {
     // insert subtitle name after video name.
-    filterGraphArgs.splice(filterGraphArgs.indexOf(video) + 1, 0, '-i', subtitleName);
+    filterGraphArgs.splice(filterGraphArgs.indexOf(video) + 1, 0, '-i', cleanSubtitleName);
     // add rest of subtitle data.
     filterGraphArgs.splice(-1, 0, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
   }
@@ -208,8 +235,8 @@ async function getCuts(name, ext, srtFile) {
   if (s < duration) keeps.push(`between(t,${s},${duration})`);
 
   // create new srt file.
-  const newSrt = newSrtArr
-    .map((b, idx) => ({ ...b, id: idx + 1 }))
+  const cleanSubtitleStr = newSrtArr
+    .map((b, idx) => ({ ...b, id: idx + 1 })) // fix id
     .reduce((acc, cur) => {
       const { id, start, end, text } = cur;
       return (acc += `${id}
@@ -220,19 +247,18 @@ ${text}
     }, '');
   // write the file.
   const cleanSubtitleName = `${name}-clean.srt`;
-  fs.writeFileSync(cleanSubtitleName, newSrt);
+  fs.writeFileSync(cleanSubtitleName, cleanSubtitleStr);
 
   // Create string of cut words.
-  const cutTxt = cutTxtArr.reduce((acc, cur) => {
+  const swearWordsTxt = cutTxtArr.reduce((acc, cur) => {
     const { id, start, end, text } = cur;
-    return (acc += `${start} - ${end} \t${text.replace(/\r?\n/, ' ')}\n`);
+    return (acc += `${start} - ${end} \t${text.trim().replace(/\r?\n/g, ' ')}\n`);
   }, '');
   // write the file -async
-  fs.writeFile(`${name}_cut_words.txt`, cutTxt, (err) => {
-    if (err) throw err;
-  });
+  const swearWordsTxtName = `${name}-swear-words.txt`;
+  fs.writeFileSync(swearWordsTxtName, swearWordsTxt);
 
-  return { cleanSubtitleName, keeps };
+  return { swearWordsTxtName, cleanSubtitleName, keeps };
 }
 
 /**
@@ -283,6 +309,29 @@ function getVideoNames() {
     .filter((file) => !avoidRegex.test(file));
   console.log(videos);
   return videos;
+}
+
+/**
+ *
+ * @param {string} name Video name without extension
+ * @param {string} ext Video extension
+ * @returns string: sanitizeVideoName
+ */
+async function sanitizeVideo(name, ext) {
+  const sanitizeVideoName = `${name}-sanitize.${ext}`;
+  // prettier-ignore
+  const sanitizeArgs = [
+    '-y',
+    '-hide_banner',
+    '-v', 'error', '-stats',
+    '-hwaccel', 'cuda',
+    '-i', `${name}.${ext}`,
+    '-c:v', 'copy',
+    '-c:a', 'copy',
+    sanitizeVideoName
+  ]
+  await spawnShell('ffmpeg', sanitizeArgs);
+  return sanitizeVideoName;
 }
 
 /**
@@ -411,12 +460,14 @@ module.exports = {
   containsSwearWords,
   deleteFiles,
   encodeVideo,
+  extractSubtitle,
   filterGraphAndEncode,
   getArgs,
   getCuts,
   getName,
   getVideoDuration,
   getVideoNames,
+  sanitizeVideo,
   spawnShell,
   transcribeVideo,
 };
