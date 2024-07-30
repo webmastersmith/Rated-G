@@ -45,14 +45,15 @@
 
     // search subtitles for swear words. Create cleaned subtitles and cut points.
     const { swearWordsTxtName, cleanSubtitleName, keeps } = await getCuts(name, ext, subName);
-    console.log('cleanSubtitleName: ', cleanSubtitleName);
+    if (args.debug) console.log('cleanSubtitleName: ', cleanSubtitleName);
 
     // encode video from cut points.
     await filterGraphAndEncode(sanitizeVideoName, name, ext, keeps, cleanSubtitleName);
     // await filterGraphAndEncode(name, ext, keeps, cleanSubtitleName);
 
     // delete working files.
-    const deletes = [cleanSubtitleName, swearWordsTxtName, sanitizeVideoName];
-    // if (!args.debug) deleteFiles(deletes);
+    const deletes = [sanitizeVideoName];
+    if (args.delete) deletes.push(cleanSubtitleName, swearWordsTxtName);
+    if (!args.debug) deleteFiles(deletes);
   }
 })();
