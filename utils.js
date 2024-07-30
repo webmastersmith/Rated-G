@@ -219,7 +219,7 @@ async function getCuts(name, ext, srtFile) {
         s = endSeconds;
         const secRemoved = Math.abs(endSeconds - startSeconds);
         totalSecondsRemoved += secRemoved;
-        keepStr += `Start time was zero. Seconds removed: ${secRemoved}.\t`;
+        if (args.debug) keepStr += `Start time was zero. Seconds removed: ${secRemoved}.\t`;
       } else {
         // ignore clips shorter than two seconds.
         if (Math.abs(startSeconds - s) >= 2) {
