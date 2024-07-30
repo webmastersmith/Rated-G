@@ -165,7 +165,7 @@ async function filterGraphAndEncode(video, name, ext, cuts, cleanSubtitleName = 
  */
 function getArgs() {
   // arguments.
-  // console.log('process', process.argv);
+  if (args.debug) console.log('process', process.argv);
   const args = Object.fromEntries(
     process.argv
       .slice(2)
@@ -203,21 +203,38 @@ async function getCuts(name, ext, srtFile) {
   const cutTxtArr = [];
   // keep track of cut time for subtitle alignment.
   let totalSecondsRemoved = 0;
+  // debug
+  let keepStr = '';
   // invert cuts
   const keeps = [];
   let s = 0;
-  for (const { id, start, end, text } of subtitles) {
+  for (const [i, sub] of subtitles.entries()) {
+    const { id, start, end, text } = sub;
     const startSeconds = Math.floor(timeToSeconds(start));
     const endSeconds = Math.ceil(timeToSeconds(end));
     if (containsSwearWords(text)) {
       // invert cuts.
       if (startSeconds === 0) {
+        // jump to next endSeconds.
         s = endSeconds;
-        totalSecondsRemoved += Math.abs(endSeconds - startSeconds);
+        const secRemoved = Math.abs(endSeconds - startSeconds);
+        totalSecondsRemoved += secRemoved;
+        keepStr += `Start time was zero. Seconds removed: ${secRemoved}.\t`;
       } else {
-        keeps.push(`between(t,${s},${startSeconds})`);
+        // ignore clips shorter than two seconds.
+        if (Math.abs(startSeconds - s) >= 2) {
+          const between = `between(t,${s},${startSeconds})`;
+          keeps.push(between);
+          const secRemoved = Math.abs(endSeconds - startSeconds);
+          totalSecondsRemoved += secRemoved;
+          if (args.debug) keepStr += `${between}\t SecondsRemoved: ${secRemoved}\t`;
+        } else {
+          // record
+          const secRemoved = Math.abs(endSeconds - s);
+          totalSecondsRemoved += secRemoved;
+          if (args.debug) keepStr += `\tTime was less than two seconds!\t ${secRemoved}\t`;
+        }
         s = endSeconds;
-        totalSecondsRemoved += Math.abs(endSeconds - startSeconds);
       }
       // save timestamp of cut words.
       cutTxtArr.push({ id, start, end, text });
@@ -229,10 +246,18 @@ async function getCuts(name, ext, srtFile) {
       // push clean srt.
       newSrtArr.push({ id, start: startFix, end: endFix, text });
     }
+
+    // to debug time scale.
+    if (args.debug) {
+      keepStr += `index: ${i}, \tid: ${id}\ts: ${s},\tstart: ${startSeconds}s, ${start}\tend: ${endSeconds}s, ${end}\t\tTotalSecondsRemoved: ${totalSecondsRemoved}s.\n`;
+    }
   }
   // push to end of video
   const duration = await getVideoDuration(`${name}.${ext}`);
   if (s < duration) keeps.push(`between(t,${s},${duration})`);
+
+  // print between times when debug.
+  if (args.debug) fs.writeFileSync(`${name}-between-times.txt`, keepStr);
 
   // create new srt file.
   const cleanSubtitleStr = newSrtArr
@@ -300,7 +325,7 @@ async function getVideoDuration(video) {
 function getVideoNames() {
   const vidext = ['\\.mp4$', '\\.mkv$', '\\.avi$', '\\.webm$'];
   const extRegex = new RegExp(vidext.join('|'));
-  const avoidVideos = ['output', 'clean', 'temp'];
+  const avoidVideos = ['output', 'clean', 'temp', 'sanitize'];
   const avoidRegex = new RegExp(avoidVideos.map((a) => vidext.map((v) => `${a}${v}`).join('|')).join('|'));
   // console.log('regex', avoidRegex);
   const videos = fs
@@ -312,7 +337,7 @@ function getVideoNames() {
 }
 
 /**
- *
+ * Copy only audio and video to remove subtitles, extra audio.
  * @param {string} name Video name without extension
  * @param {string} ext Video extension
  * @returns string: sanitizeVideoName
@@ -324,7 +349,6 @@ async function sanitizeVideo(name, ext) {
     '-y',
     '-hide_banner',
     '-v', 'error', '-stats',
-    '-hwaccel', 'cuda',
     '-i', `${name}.${ext}`,
     '-c:v', 'copy',
     '-c:a', 'copy',
