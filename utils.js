@@ -165,7 +165,6 @@ async function filterGraphAndEncode(video, name, ext, cuts, cleanSubtitleName = 
  */
 function getArgs() {
   // arguments.
-  if (args.debug) console.log('process', process.argv);
   const args = Object.fromEntries(
     process.argv
       .slice(2)
@@ -183,7 +182,7 @@ function getArgs() {
       })
       .filter((arg) => !!arg[0])
   );
-  if (args.debug) console.log('args', args);
+  if (args.debug) console.log('process', process.argv, '\nargs', args);
   return args;
 }
 
