@@ -3,7 +3,7 @@
 - Simple script that removes undesirable video and audio. Swear words are removed from the subtitles. Inspired by [Video Swear Jar](https://github.com/jveldboom/video-swear-jar).
 - Subtitles are more accurate than AI transcribing.
 
-## Dependancies
+## Dependencies
 
 - [Nodejs](https://nodejs.org/en/download/package-manager) installed.
 - [ffmpeg](https://www.ffmpeg.org/download.html) installed.
@@ -12,7 +12,7 @@
 ## Simple Start
 
 - clone repo: `git clone git@github.com:webmastersmith/Rated-G.git`
-- copy videos and subtitles into same directory you just downloaded.
+- copy videos and subtitles into the Rated-G directory.
   - subtitles must have the same name as the video, with an `.srt` extension.
   - (e.g. `video1.mp4`, `video1.srt`)
 - run from command line in same directory: `node clean.js`
@@ -23,12 +23,12 @@
 - Subtitles do not provide perfect alignment, but their really close. Editing the time can make sure to remove undesirable video and audio.
 - **Error** about reading subtitles:
   - Check the file name is not same as videos.
-  - The file header is possible corrupted. Copy contents to new file and save. Delete old file.
+  - The **file header is possible corrupted**. Copy contents to new file and save. Delete old file.
 - **Extra Cuts**
   - If you would like to take out other parts (e.g. nudity, drugs, violence...), add the time to the subtitles file.
   - `6` <-- Can be any number, but must be a number.
   - `00:00:34,000 --> 00:01:56,000` <-- hours:minutes:seconds,milliseconds
-    - **Caution!**. Do not let times overlap with other subtitles. Remove the subtitles within the cut section.
+    - **Caution!** Do not let times overlap with other subtitles. Remove the subtitles within the cut section.
   - `!remove!` <-- special key word.
 
 ```txt
