@@ -351,6 +351,7 @@ async function sanitizeVideo(name, ext) {
     '-i', `${name}.${ext}`,
     '-c:v', 'copy',
     '-c:a', 'copy',
+    '-map_chapters', '-1',
     sanitizeVideoName
   ]
   await spawnShell('ffmpeg', sanitizeArgs);

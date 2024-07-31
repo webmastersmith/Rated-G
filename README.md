@@ -47,7 +47,6 @@ node clean.js --debug # verbose output. Does not delete files or videos.
 
 ## FFmpeg Encoding
 
-- Encoding is the process of parsing the input and putting it in a format(codec) with fixed timeline.
 - Once the video is cut, the timeline is broken. This can cause the audio and video to be out of sync during playback. Encoding fixes this.
 - GPU encoding is more than ten times faster than CPU encoding. The script is already setup for encoding with Nvidia GPU. If you get errors, find the codec that works for your pc hardware and fix the arguments in the **filterGraphAndEncode** function.
 
