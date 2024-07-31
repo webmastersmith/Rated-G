@@ -226,12 +226,13 @@ async function getCuts(name, ext, srtFile) {
           keeps.push(between);
           const secRemoved = Math.abs(endSeconds - startSeconds);
           totalSecondsRemoved += secRemoved;
-          if (args.debug) keepStr += `${between}\t SecondsRemoved: ${secRemoved}\t`;
+          if (args.debug) keepStr += `${between}\tSecondsRemoved: ${secRemoved}\t`;
         } else {
           // record
           const secRemoved = Math.abs(endSeconds - s);
           totalSecondsRemoved += secRemoved;
-          if (args.debug) keepStr += `\tTime was less than two seconds! Skipping!\t ${secRemoved}\t`;
+          if (args.debug)
+            keepStr += `Time was less than two seconds! Skipping!\t\tSecondsRemoved: ${secRemoved}\t`;
         }
         s = endSeconds;
       }
@@ -352,6 +353,9 @@ async function sanitizeVideo(name, ext) {
     '-c:v', 'copy',
     '-c:a', 'copy',
     '-map_chapters', '-1',
+    '-map_metadata', '-1',
+    '-metadata', `creation_time=${new Date().toISOString()}`,
+    '-metadata',`title="${name}.mp4"`,
     sanitizeVideoName
   ]
   await spawnShell('ffmpeg', sanitizeArgs);
