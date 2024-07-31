@@ -1,6 +1,7 @@
 const fs = require('fs');
 const swearWords = require('./swear-words.json');
 
+const ws = fs.createWriteStream('rated-g.log', { flags: 'a' });
 const args = getArgs();
 
 /**
@@ -39,7 +40,9 @@ function deleteFiles(files) {
   for (const file of files) {
     fs.unlink(file, (e) => {
       if (e) throw Error(e);
-      console.log('\x1b[34m', `${file} was deleted`);
+      const msg = `${file} was deleted`;
+      if (args.debug) ws.write(msg + '\n');
+      console.log('\x1b[34m', msg);
       console.log('\x1b[0m', '');
     });
   }
@@ -77,7 +80,8 @@ async function encodeVideo(name, joinedVideoName, subTitles = false) {
     // add rest of subtitle data.
     encodeArgs.splice(-1, 0, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
   }
-  await spawnShell('ffmpeg', encodeArgs);
+  const { stdout, stderr } = await spawnShell('ffmpeg', encodeArgs);
+  if (args.debug) ws.write(`encodeVideo:\nstdout: ${stdout}\nstderr: ${stderr}`);
   return cleanVideoName;
 }
 
@@ -98,7 +102,8 @@ async function extractSubtitle(video, subName, subNumber = 0) {
       subName
     ]
   try {
-    await spawnShell('ffmpeg', ffmpegArgs);
+    const { stdout, stderr } = await spawnShell('ffmpeg', ffmpegArgs);
+    if (args.debug) ws.write(`extractSubtitles:\nstdout: ${stdout}\nstderr: ${stderr}\n\n`);
     console.log('\x1b[34m', `Extracted ${subName}`);
     console.log('\x1b[0m', '');
     return true;
@@ -154,7 +159,9 @@ async function filterGraphAndEncode(video, name, ext, cuts, cleanSubtitleName = 
     filterGraphArgs.splice(-1, 0, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
   }
 
-  await spawnShell('ffmpeg', filterGraphArgs);
+  const { stdout, stderr } = await spawnShell('ffmpeg', filterGraphArgs);
+  if (args.debug) ws.write(`filterGraphAndEncode:\nstdout: ${stdout}\nstderr: ${stderr}\n\n`);
+
   return cleanVideoName;
 }
 
@@ -182,7 +189,8 @@ function getArgs() {
       })
       .filter((arg) => !!arg[0])
   );
-  if (args.debug) console.log('process', process.argv, '\nargs', args);
+  if (args.debug)
+    ws.write(`getArgs:\nprocess.argv: ${JSON.stringify(process.argv)}\nargs: ${JSON.stringify(args)}\n\n`);
   return args;
 }
 
@@ -257,7 +265,7 @@ async function getCuts(name, ext, srtFile) {
   if (s < duration) keeps.push(`between(t,${s},${duration})`);
 
   // print between times when debug.
-  if (args.debug) fs.writeFileSync(`${name}-between-times.txt`, keepStr);
+  if (args.debug) ws.write(`getCuts: -keepStr\n${keepStr}\n\n`);
 
   // create new srt file.
   const cleanSubtitleStr = newSrtArr
@@ -314,7 +322,7 @@ async function getVideoDuration(video) {
     video
   ]
   const { stdout: duration } = await spawnShell('ffprobe', durationArgs);
-  if (args.debug) console.log('duration: ', duration);
+  if (args.debug) ws.write(`duration:\t${duration}\n\n`);
   return +duration.trim();
 }
 
@@ -333,6 +341,8 @@ function getVideoNames() {
     .filter((file) => extRegex.test(file))
     .filter((file) => !avoidRegex.test(file));
   console.log(videos);
+  if (args.debug) ws.write(`getVideoNames:\n${videos.join('\n')}\n\n`);
+
   return videos;
 }
 
@@ -358,7 +368,9 @@ async function sanitizeVideo(name, ext) {
     '-metadata',`title="${name}.mp4"`,
     sanitizeVideoName
   ]
-  await spawnShell('ffmpeg', sanitizeArgs);
+  const { stdout, stderr } = await spawnShell('ffmpeg', sanitizeArgs);
+  if (args.debug) ws.write(`sanitizeVideo:\nstdout: ${stdout}\nstderr: ${stderr}\n\n`);
+
   return sanitizeVideoName;
 }
 
@@ -442,6 +454,12 @@ function splitSubtitles(subTitleName) {
     };
   });
   if (args.debug) console.log(subtitles);
+  const subStr = subtitles.reduce((acc, cur) => {
+    const { id, start, end, text } = cur;
+    return (acc += `${id}\n${start} --> ${end}\n${text}\n\n`);
+  }, '');
+
+  if (args.debug) ws.write(`splitSubtitles:\n${subStr}\n\n`);
   return subtitles;
 }
 
@@ -465,10 +483,10 @@ function timeToSeconds(time) {
  */
 async function transcribeVideo(video) {
   if (args.debug) {
-    console.log(
-      '\x1b[35m',
-      'Could not extract subtitles.\nStarting Docker with AI transcription.\nThis will take a few minutes to transcribe video.'
-    );
+    const msg =
+      'Could not extract subtitles.\nStarting Docker with AI transcription.\nThis will take a few minutes to transcribe video.\n\n';
+    if (args.debug) ws.write(msg);
+    console.log('\x1b[35m', msg);
     console.log('\x1b[0m', '');
   }
   // prettier-ignore
@@ -481,7 +499,9 @@ async function transcribeVideo(video) {
       '--model', 'tiny.en',
       '--language', 'en',
     ]
-  return await spawnShell('docker', dockerArgs);
+  const { stdout, stderr } = await spawnShell('docker', dockerArgs);
+  if (args.debug) ws.write(`transcribeVideo:\nstdout: ${stdout}\nsterr:${stderr}\n\n`);
+  return;
 }
 
 module.exports = {
