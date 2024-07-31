@@ -53,7 +53,7 @@
 
     // delete working files.
     const deletes = [sanitizeVideoName];
-    if (args.delete) deletes.push(cleanSubtitleName, swearWordsTxtName, video, subName);
+    if (args.clean) deletes.push(cleanSubtitleName, swearWordsTxtName, video, subName);
     if (!args.debug) deleteFiles(deletes);
   }
 })();

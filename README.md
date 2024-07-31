@@ -17,6 +17,13 @@
   - (e.g. `video1.mp4`, `video1.srt`)
 - run from command line in same directory: `node clean.js`
 
+## Flags
+
+```sh
+node clean.js --clean # deletes all files and videos (including original), except clean video.
+node clean.js --debug # verbose output. Does not delete files.
+```
+
 ## Subtitles
 
 - Most video subtitles can be found online. Make sure the subtitle matches the video. Cuts to video will be wrong if subtitle is wrong.
