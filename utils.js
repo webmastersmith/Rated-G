@@ -231,7 +231,7 @@ async function getCuts(name, ext, srtFile) {
           // record
           const secRemoved = Math.abs(endSeconds - s);
           totalSecondsRemoved += secRemoved;
-          if (args.debug) keepStr += `\tTime was less than two seconds!\t ${secRemoved}\t`;
+          if (args.debug) keepStr += `\tTime was less than two seconds! Skipping!\t ${secRemoved}\t`;
         }
         s = endSeconds;
       }
