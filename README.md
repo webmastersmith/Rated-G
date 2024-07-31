@@ -21,7 +21,7 @@
 
 ```sh
 node clean.js --clean # deletes all files and videos (including original), except clean video.
-node clean.js --debug # verbose output. Does not delete files.
+node clean.js --debug # verbose output. Does not delete files or videos.
 ```
 
 ## Subtitles
@@ -29,12 +29,13 @@ node clean.js --debug # verbose output. Does not delete files.
 - Most video subtitles can be found online. Make sure the subtitle matches the video. Cuts to video will be wrong if subtitle is wrong.
 - Subtitles do not provide perfect alignment, but their really close. Editing the time can make sure to remove undesirable video and audio.
 - **Error** about reading subtitles:
-  - Check the file name is not same as videos.
-  - The **file header is possible corrupted**. Copy contents to new file and save. Delete old file.
+  - Check the subtitle name is the same as video name. (e.g. `video.mp4`, `video.srt`).
+  - The **subtitle file header is possible corrupted**. Copy contents to new file and save. Delete old file.
 - **Extra Cuts**
   - If you would like to take out other parts (e.g. nudity, drugs, violence...), add the time to the subtitles file.
   - `6` <-- Can be any number, but must be a number.
-  - `00:00:34,000 --> 00:01:56,000` <-- hours:minutes:seconds,milliseconds
+  - `00:00:34,000 --> 00:01:56,000` <-- `start --> end` the spacing and format must be exact.
+    - `00:00:00,000` <-- hours:minutes:seconds,milliseconds
     - **Caution!** Do not let times overlap with other subtitles. Remove the subtitles within the cut section.
   - `!remove!` <-- special key word.
 
