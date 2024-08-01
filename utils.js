@@ -1,7 +1,6 @@
 const fs = require('fs');
 const swearWords = require('./swear-words.json');
 
-const ws = fs.createWriteStream('rated-g.log', { flags: 'a' });
 const args = getArgs();
 
 /**
@@ -53,7 +52,7 @@ function deleteFiles(files) {
  * @param {boolean} subTitles true|false. Do you need to embed subtitles.
  * @returns string: Clean video name.
  */
-async function encodeVideo(name, joinedVideoName, subTitles = false) {
+async function encodeVideo(name, joinedVideoName, ws, subTitles = false) {
   // const cleanVideoName = `${name}-clean.mp4`
   const cleanVideoName = `${name}-clean.mp4`;
   if (args['no-encode']) return cleanVideoName;
@@ -78,8 +77,8 @@ async function encodeVideo(name, joinedVideoName, subTitles = false) {
     // add rest of subtitle data.
     encodeArgs.splice(-1, 0, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
   }
-  const { stdout, stderr } = await spawnShell('ffmpeg', encodeArgs);
-  if (args.debug) ws.write(`encodeVideo:\nstdout: ${stdout}\nstderr: ${stderr}`);
+  const stdout = await spawnShell('ffmpeg', encodeArgs, ws);
+  if (args.debug) ws.write(`encodeVideo:\nstdout: ${stdout}\n\n`);
   return cleanVideoName;
 }
 
@@ -90,7 +89,7 @@ async function encodeVideo(name, joinedVideoName, subTitles = false) {
  * @param {number} subNumber location of where subtitle is found.
  * @returns
  */
-async function extractSubtitle(video, subName, subNumber = 0) {
+async function extractSubtitle(video, subName, ws, subNumber = 0) {
   // prettier-ignore
   const ffmpegArgs = [
       '-hide_banner',
@@ -100,8 +99,8 @@ async function extractSubtitle(video, subName, subNumber = 0) {
       subName
     ]
   try {
-    const { stdout, stderr } = await spawnShell('ffmpeg', ffmpegArgs);
-    if (args.debug) ws.write(`extractSubtitles:\nstdout: ${stdout}\nstderr: ${stderr}\n\n`);
+    const stdout = await spawnShell('ffmpeg', ffmpegArgs, ws);
+    if (args.debug) ws.write(`extractSubtitles:\nstdout: ${stdout}\n\n`);
     console.log('\x1b[34m', `Extracted ${subName}`);
     console.log('\x1b[0m', '');
     return true;
@@ -130,7 +129,7 @@ function fixDecimal(num) {
  * @param {string[]} cuts  Video remove sections. {start, end}.
  * @returns Clean video name.
  */
-async function filterGraphAndEncode(video, name, ext, cuts, cleanSubtitleName = '') {
+async function filterGraphAndEncode(video, name, ext, cuts, ws, cleanSubtitleName = '') {
   const cleanVideoName = `${name}-clean.mp4`;
   // select frames was taken from: https://github.com/rooty0/ffmpeg_video_cutter/tree/master
   // prettier-ignore
@@ -157,8 +156,8 @@ async function filterGraphAndEncode(video, name, ext, cuts, cleanSubtitleName = 
     filterGraphArgs.splice(-1, 0, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
   }
 
-  const { stdout, stderr } = await spawnShell('ffmpeg', filterGraphArgs);
-  if (args.debug) ws.write(`filterGraphAndEncode:\nstdout: ${stdout}\nstderr: ${stderr}\n\n`);
+  const stdout = await spawnShell('ffmpeg', filterGraphArgs, ws);
+  if (args.debug) ws.write(`filterGraphAndEncode:\nstdout: ${stdout}\n\n`);
 
   return cleanVideoName;
 }
@@ -187,8 +186,6 @@ function getArgs() {
       })
       .filter((arg) => !!arg[0])
   );
-  if (args.debug)
-    ws.write(`getArgs:\nprocess.argv: ${JSON.stringify(process.argv)}\nargs: ${JSON.stringify(args)}\n\n`);
   return args;
 }
 
@@ -198,9 +195,9 @@ function getArgs() {
  * @param {string} srtFile Name of subtitle file.
  * @returns object: { newSrt, cutArr, cutTxt }
  */
-async function getCuts(name, ext, srtFile) {
+async function getCuts(name, ext, srtFile, ws) {
   // turn subtitles into string[].
-  const subtitles = splitSubtitles(srtFile);
+  const subtitles = splitSubtitles(srtFile, ws);
 
   // new srt.
   const newSrtArr = [];
@@ -259,7 +256,7 @@ async function getCuts(name, ext, srtFile) {
     }
   }
   // push to end of video
-  const duration = await getVideoDuration(`${name}.${ext}`);
+  const duration = await getVideoDuration(`${name}.${ext}`, ws);
   if (s < duration) keeps.push(`between(t,${s},${duration})`);
 
   // print between times when debug.
@@ -308,19 +305,19 @@ function getName(name) {
  * @param {string} video name including extension.
  * @returns string. time in sec.milli
  */
-async function getVideoDuration(video) {
+async function getVideoDuration(video, ws) {
   // prettier-ignore
   const durationArgs = [
     '-v', 'error',
     '-hide_banner',
-    '-print_format', 'json',
+    '-print_format', 'flat',
     '-show_entries', 'stream=duration',
     '-of', 'default=noprint_wrappers=1:nokey=1',
     '-select_streams', 'v:0',
     video
   ]
-  const { stdout: duration } = await spawnShell('ffprobe', durationArgs);
-  if (args.debug) ws.write(`duration:\t${duration}\n\n`);
+  const duration = await spawnShell('ffprobe', durationArgs, ws);
+  if (args.debug) ws.write(`duration: ${duration}\n\n`);
   return +duration.trim();
 }
 
@@ -339,8 +336,6 @@ function getVideoNames() {
     .filter((file) => extRegex.test(file))
     .filter((file) => !avoidRegex.test(file));
   console.log(videos);
-  if (args.debug) ws.write(`getVideoNames:\n${videos.join('\n')}\n\n`);
-
   return videos;
 }
 
@@ -350,7 +345,7 @@ function getVideoNames() {
  * @param {string} ext Video extension
  * @returns string: sanitizeVideoName
  */
-async function sanitizeVideo(name, ext) {
+async function sanitizeVideo(name, ext, ws) {
   const sanitizeVideoName = `${name}-sanitize.${ext}`;
   // prettier-ignore
   const sanitizeArgs = [
@@ -366,8 +361,8 @@ async function sanitizeVideo(name, ext) {
     '-metadata',`title="${name}.mp4"`,
     sanitizeVideoName
   ]
-  const { stdout, stderr } = await spawnShell('ffmpeg', sanitizeArgs);
-  if (args.debug) ws.write(`sanitizeVideo:\nstdout: ${stdout}\nstderr: ${stderr}\n\n`);
+  const stdout = await spawnShell('ffmpeg', sanitizeArgs, ws);
+  if (args.debug) ws.write(`sanitizeVideo:\nstdout: ${stdout}\n\n`);
 
   return sanitizeVideoName;
 }
@@ -397,24 +392,25 @@ function secondsToTime(time) {
  * @param {array} spawnArgs array of arguments. -No spaces. Must be comma separated.
  * @returns object: {stdout, stderr}
  */
-async function spawnShell(command, spawnArgs = []) {
+async function spawnShell(command, spawnArgs = [], ws) {
   const { spawn } = require('child_process');
   return new Promise((resolve, reject) => {
-    console.log(`running command: ${command} ${spawnArgs.join(' ')}`);
+    const msg = `running command: ${command} ${spawnArgs.join(' ')}\n\n`;
+    if (args.debug) ws.write(msg);
+    console.log(msg);
     const process = spawn(command, spawnArgs);
     let stdout = '';
-    let stderr = '';
     process.stdout.on('data', (data) => {
       console.log(data.toString());
       stdout += data;
     });
     process.stderr.on('data', (data) => {
       console.log(data.toString());
-      stderr += data;
+      stdout += data;
     });
     process.on('close', (code) => {
       if (code === 0) {
-        resolve({ stdout, stderr });
+        resolve(stdout);
       } else {
         const error = new Error(`Command "${command} ${spawnArgs.join(' ')}" exited with code ${code}`);
         error.code = code;
@@ -429,7 +425,7 @@ async function spawnShell(command, spawnArgs = []) {
   });
 }
 
-function splitSubtitles(subTitleName) {
+function splitSubtitles(subTitleName, ws) {
   const srt = fs.readFileSync(subTitleName, 'utf-8');
   // read srt, split into blocks. -convert to object.
   const subtitles = srt.split(/\r?\n\r?\n\d{1,5}\r?\n?$/m).map((block, idx) => {
@@ -451,7 +447,7 @@ function splitSubtitles(subTitleName) {
       text: text.join('\n').trim(),
     };
   });
-  if (args.debug) console.log(subtitles);
+
   const subStr = subtitles.reduce((acc, cur) => {
     const { id, start, end, text } = cur;
     return (acc += `${id}\n${start} --> ${end}\n${text}\n\n`);
@@ -479,7 +475,7 @@ function timeToSeconds(time) {
  * @param {string} video Video name and extension.
  * @returns object: { stdout: string stderr: string }
  */
-async function transcribeVideo(video) {
+async function transcribeVideo(video, ws) {
   if (args.debug) {
     const msg =
       'Could not extract subtitles.\nStarting Docker with AI transcription.\nThis will take a few minutes to transcribe video.\n\n';
@@ -497,8 +493,8 @@ async function transcribeVideo(video) {
       '--model', 'tiny.en',
       '--language', 'en',
     ]
-  const { stdout, stderr } = await spawnShell('docker', dockerArgs);
-  if (args.debug) ws.write(`transcribeVideo:\nstdout: ${stdout}\nsterr:${stderr}\n\n`);
+  const stdout = await spawnShell('docker', dockerArgs, ws);
+  if (args.debug) ws.write(`transcribeVideo:\nstdout: ${stdout}\n\n`);
   return;
 }
 
