@@ -20,7 +20,7 @@
     console.log(video);
     const { name, ext } = getName(video);
     const logName = `${name}.log`;
-    const ws = fs.createWriteStream(logName, { flags: 'a' });
+    const ws = fs.createWriteStream(logName);
     if (args.debug) {
       ws.write(`getArgs:\nprocess.argv: ${JSON.stringify(process.argv)}\nargs: ${JSON.stringify(args)}\n\n`);
       ws.write(`getVideoNames:\n${videos.join('\n')}\n\n`);

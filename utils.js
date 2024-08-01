@@ -256,7 +256,7 @@ async function getCuts(name, ext, srtFile, ws) {
     }
   }
   // push to end of video
-  const duration = await getVideoDuration(`${name}.${ext}`, ws);
+  const duration = await getVideoDuration(name, ext, ws);
   if (s < duration) keeps.push(`between(t,${s},${duration})`);
 
   // print between times when debug.
@@ -305,18 +305,20 @@ function getName(name) {
  * @param {string} video name including extension.
  * @returns string. time in sec.milli
  */
-async function getVideoDuration(video, ws) {
+async function getVideoDuration(name, ext, ws) {
+  // MKV containers do not write duration to header. Must use 'format' option.
+  const isMKV = ext === 'mkv';
   // prettier-ignore
   const durationArgs = [
     '-v', 'error',
     '-hide_banner',
     '-print_format', 'flat',
-    '-show_entries', 'stream=duration',
+    '-show_entries',  isMKV ? 'format=duration' : 'stream=duration',
     '-of', 'default=noprint_wrappers=1:nokey=1',
     '-select_streams', 'v:0',
-    video
+    `${name}.${ext}`
   ]
-  const duration = await spawnShell('ffprobe', durationArgs, ws);
+  let duration = await spawnShell('ffprobe', durationArgs, ws);
   if (args.debug) ws.write(`duration: ${duration}\n\n`);
   return +duration.trim();
 }
@@ -355,6 +357,7 @@ async function sanitizeVideo(name, ext, ws) {
     '-i', `${name}.${ext}`,
     '-c:v', 'copy',
     '-c:a', 'copy',
+    '-sn',
     '-map_chapters', '-1',
     '-map_metadata', '-1',
     '-metadata', `creation_time=${new Date().toISOString()}`,
