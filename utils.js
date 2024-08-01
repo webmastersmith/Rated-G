@@ -79,6 +79,8 @@ async function encodeVideo(name, joinedVideoName, ws, subTitles = false) {
   }
   const stdout = await spawnShell('ffmpeg', encodeArgs, ws);
   ws.write(`encodeVideo:\nstdout: ${stdout}\n\n`);
+  // log clean video metadata.
+  await getVideoMetadata(cleanVideoName, ws);
   return cleanVideoName;
 }
 
@@ -158,7 +160,8 @@ async function filterGraphAndEncode(video, name, ext, cuts, ws, cleanSubtitleNam
 
   const stdout = await spawnShell('ffmpeg', filterGraphArgs, ws);
   ws.write(`filterGraphAndEncode:\nstdout: ${stdout}\n\n`);
-
+  // log clean video metadata.
+  await getVideoMetadata(cleanVideoName, ws);
   return cleanVideoName;
 }
 
@@ -231,9 +234,9 @@ async function getCuts(name, ext, srtFile, ws) {
           totalSecondsRemoved += secRemoved;
           keepStr += `${between}\tSecondsRemoved: ${secRemoved}\t`;
         } else {
-          // record
           const secRemoved = Math.abs(endSeconds - s);
           totalSecondsRemoved += secRemoved;
+          // log
           keepStr += `Time was less than two seconds! Skipping!\t\tSecondsRemoved: ${secRemoved}\t`;
         }
         s = endSeconds;
@@ -257,7 +260,7 @@ async function getCuts(name, ext, srtFile, ws) {
   if (s < duration) keeps.push(`between(t,${s},${duration})`);
 
   // print between times when debug.
-  ws.write(`getCuts: -keepStr\n${keepStr}\n\n`);
+  ws.write(`getCuts: -keepStr. This logs the time removed from subtitles.\n${keepStr}\n\n`);
 
   // create new srt file.
   const cleanSubtitleStr = newSrtArr
@@ -319,6 +322,13 @@ async function getVideoDuration(name, ext, ws) {
   return +duration.trim();
 }
 
+async function getVideoMetadata(video, ws) {
+  const metadataArgs = ['-hide_banner', video];
+  const stdout = await spawnShell('ffprobe', metadataArgs, ws);
+  ws.write(`${video} metdata\n${stdout}\n\n`);
+  return;
+}
+
 /**
  * Filter list of files for video type, and remove temporary videos from list.
  * @returns string[]: List of video names.
@@ -362,7 +372,8 @@ async function sanitizeVideo(name, ext, ws) {
   ]
   const stdout = await spawnShell('ffmpeg', sanitizeArgs, ws);
   ws.write(`sanitizeVideo:\nstdout: ${stdout}\n\n`);
-
+  // log new video metadata.
+  await getVideoMetadata(sanitizeVideoName, ws);
   return sanitizeVideoName;
 }
 
