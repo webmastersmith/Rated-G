@@ -283,7 +283,7 @@ ${text}
     const { id, start, end, text } = cur;
     return (acc += `${start} - ${end} \t${text.trim().replace(/\r?\n/g, ' ')}\n`);
   }, '');
-  // write the file -async
+  // log
   ws.write(`getCuts: -Swear Words\n${swearWordsTxt}\n\n`);
   return { cleanSubtitleName, keeps };
 }
