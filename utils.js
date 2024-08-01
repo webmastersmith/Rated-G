@@ -318,8 +318,9 @@ async function getVideoDuration(name, ext, ws) {
     `${name}.${ext}`
   ]
   let duration = await spawnShell('ffprobe', durationArgs, ws);
-  ws.write(`duration: ${duration}\n\n`);
-  return +duration.trim();
+  duration = +duration.trim();
+  ws.write(`Video Length: Sec.Milli: ${duration}, Time: ${secondsToTime(duration)}\n\n`);
+  return duration;
 }
 
 async function getVideoMetadata(video, ws) {
