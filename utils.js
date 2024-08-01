@@ -524,6 +524,7 @@ module.exports = {
   getCuts,
   getName,
   getVideoDuration,
+  getVideoMetadata,
   getVideoNames,
   sanitizeVideo,
   spawnShell,

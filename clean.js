@@ -8,6 +8,7 @@
     getArgs,
     getCuts,
     getName,
+    getVideoMetadata,
     getVideoNames,
     sanitizeVideo,
     transcribeVideo,
