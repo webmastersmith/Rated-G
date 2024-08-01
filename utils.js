@@ -40,9 +40,7 @@ function deleteFiles(files) {
   for (const file of files) {
     fs.unlink(file, (e) => {
       if (e) throw Error(e);
-      const msg = `${file} was deleted`;
-      if (args.debug) ws.write(msg + '\n');
-      console.log('\x1b[34m', msg);
+      console.log('\x1b[34m', `${file} was deleted`);
       console.log('\x1b[0m', '');
     });
   }
