@@ -21,10 +21,9 @@
     const { name, ext } = getName(video);
     const logName = `${name}.log`;
     const ws = fs.createWriteStream(logName);
-    if (args.debug) {
-      ws.write(`getArgs:\nprocess.argv: ${JSON.stringify(process.argv)}\nargs: ${JSON.stringify(args)}\n\n`);
-      ws.write(`getVideoNames:\n${videos.join('\n')}\n\n`);
-    }
+    ws.write(`getArgs:\nprocess.argv: ${JSON.stringify(process.argv)}\nargs: ${JSON.stringify(args)}\n\n`);
+    ws.write(`getVideoNames:\n${videos.join('\n')}\n\n`);
+
     // check for srt file. if not found, try to extract it.
     const subName = `${name}.srt`;
     if (!fs.existsSync(subName)) {
@@ -51,16 +50,18 @@
     const sanitizeVideoName = await sanitizeVideo(name, ext, ws);
 
     // search subtitles for swear words. Create cleaned subtitles and cut points.
-    const { swearWordsTxtName, cleanSubtitleName, keeps } = await getCuts(name, ext, subName, ws);
+    const { cleanSubtitleName, keeps } = await getCuts(name, ext, subName, ws);
 
     // encode video from cut points.
     await filterGraphAndEncode(sanitizeVideoName, name, ext, keeps, ws, cleanSubtitleName);
     // await filterGraphAndEncode(name, ext, keeps, cleanSubtitleName);
 
     // delete working files.
-    const deletes = [sanitizeVideoName, logName];
-    if (args.clean) deletes.push(cleanSubtitleName, swearWordsTxtName, video, subName);
+    const deletes = [sanitizeVideoName, cleanSubtitleName];
+    // remove everything but clean video.
+    if (args.clean) deletes.push(video, subName, logName);
+    // if debug flag is passed, prevent deletion of files.
     if (!args.debug) deleteFiles(deletes);
-    if (args.debug) ws.end();
+    ws.end();
   }
 })();
