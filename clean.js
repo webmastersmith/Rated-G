@@ -24,6 +24,9 @@
     ws.write(`getArgs:\nprocess.argv: ${JSON.stringify(process.argv)}\nargs: ${JSON.stringify(args)}\n\n`);
     ws.write(`getVideoNames:\n${videos.join('\n')}\n\n`);
 
+    // log original video metadata.
+    await getVideoMetadata(video, ws);
+
     // check for srt file. if not found, try to extract it.
     const subName = `${name}.srt`;
     if (!fs.existsSync(subName)) {
