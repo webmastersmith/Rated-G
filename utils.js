@@ -433,7 +433,6 @@ async function spawnShell(command, spawnArgs = [], ws) {
         const error = new Error(`Command "${command} ${spawnArgs.join(' ')}" exited with code ${code}`);
         error.code = code;
         error.stdout = stdout;
-        error.stderr = stderr;
         reject(error);
       }
     });
