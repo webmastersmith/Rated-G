@@ -134,22 +134,24 @@ function fixDecimal(num) {
 async function filterGraphAndEncode(video, name, ext, cuts, ws, cleanSubtitleName = '') {
   const cleanVideoName = `${name}-clean.mp4`;
   // select frames was taken from: https://github.com/rooty0/ffmpeg_video_cutter/tree/master
+  const isGPU = !args.cpu;
   // prettier-ignore
   const filterGraphArgs = [
     '-y',
     // '-report',
     '-hide_banner',
     '-v', 'error', '-stats',
-    '-hwaccel', 'cuda',
+    isGPU ? '-hwaccel' : '', isGPU ? 'cuda' : '',
     '-i', video,
     '-vf', `select='${cuts.join('+')}', setpts=N/FRAME_RATE/TB`,
     '-af', `aselect='${cuts.join('+')}', asetpts=N/SAMPLE_RATE/TB`,
-    '-c:v', 'hevc_nvenc',
-    '-preset', 'fast',
+    '-c:v', isGPU ? 'hevc_nvenc' : 'libx264',
+    isGPU ? '-preset': '-crf', isGPU ? 'fast' : '26',
     '-c:a', 'aac',
-    '-b:a', '112k',
+    '-b:a', '128k',
     cleanVideoName
   ]
+
   // add subtitles if exist.
   if (cleanSubtitleName) {
     // insert subtitle name after video name.
@@ -158,7 +160,11 @@ async function filterGraphAndEncode(video, name, ext, cuts, ws, cleanSubtitleNam
     filterGraphArgs.splice(-1, 0, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
   }
 
-  const stdout = await spawnShell('ffmpeg', filterGraphArgs, ws);
+  const stdout = await spawnShell(
+    'ffmpeg',
+    filterGraphArgs.filter((a) => a !== ''),
+    ws
+  );
   ws.write(`filterGraphAndEncode:\nstdout: ${stdout}\n\n`);
   // log clean video metadata.
   await getVideoMetadata(cleanVideoName, ws);
@@ -181,6 +187,7 @@ function getArgs() {
         // console.log('arg', arg);
         const kv = arg
           .trim()
+          .toLowerCase()
           .replace(/^-{1,2}/, '')
           .split(/\s|=/);
         // console.log('kv', kv);
