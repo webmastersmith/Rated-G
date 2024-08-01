@@ -323,7 +323,7 @@ async function getVideoDuration(name, ext, ws) {
 }
 
 async function getVideoMetadata(video, ws) {
-  const metadataArgs = ['-hide_banner', video];
+  const metadataArgs = ['-hide_banner', '-i', video];
   const stdout = await spawnShell('ffprobe', metadataArgs, ws);
   ws.write(`${video} metdata\n${stdout}\n\n`);
   return;
