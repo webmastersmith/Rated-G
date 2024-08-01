@@ -22,6 +22,7 @@
 ```sh
 node clean.js --clean # deletes all files and videos (including original), except clean video.
 node clean.js --debug # verbose output. Does not delete files or videos.
+node clean.js --cpu # if you want to use your CPU instead of GPU.
 ```
 
 ## Subtitles
