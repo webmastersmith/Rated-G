@@ -12,7 +12,7 @@
 ## Simple Start
 
 - clone repo: `git clone git@github.com:webmastersmith/Rated-G.git`
-- copy videos and subtitles into the Rated-G directory.
+- copy videos and subtitles into the **Rated-G directory**.
   - subtitles must have the same name as the video, with an `.srt` extension.
   - (e.g. `video1.mp4`, `video1.srt`)
 - run from command line in same directory: `node clean.js`
@@ -46,6 +46,7 @@ node clean.js --quality=24 --bit-rate=192k
 - **Error** about reading subtitles:
   - Check the subtitle name is the same as video name. (e.g. `video.mp4`, `video.srt`).
   - The **subtitle file header is possible corrupted**. Copy contents to new file and save. Delete old file.
+- **Docker Error**: If no subtitles are found, [Video Swear Jar](https://github.com/jveldboom/video-swear-jar) will be called to transcribe video. Docker engine must be installed and running.
 - **Extra Cuts**
   - If you would like to take out other parts (e.g. nudity, drugs, violence...), add the time to the subtitles file.
   - `6` <-- Can be any number, but must be a number.
