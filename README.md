@@ -46,7 +46,7 @@ node clean.js --quality=24 --bit-rate=192k
 - **Error** about reading subtitles:
   - Check the subtitle name is the same as video name. (e.g. `video.mp4`, `video.srt`).
   - The **subtitle file header is possible corrupted**. Copy contents to new file and save. Delete old file.
-- **Docker Error**: If no subtitles are found, [Video Swear Jar](https://github.com/jveldboom/video-swear-jar) will be called to transcribe video. Docker engine must be installed and running.
+- **Docker Error**: If no subtitles are found, [Video Swear Jar](https://github.com/jveldboom/video-swear-jar) image will be called to transcribe video. Docker engine must be installed and running.
 - **Extra Cuts**
   - If you would like to take out other parts (e.g. nudity, drugs, violence...), add the time to the subtitles file.
   - `6` <-- Can be any number, but must be a number.
