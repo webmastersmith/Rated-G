@@ -135,10 +135,11 @@ async function filterGraphAndEncode(video, name, ext, cuts, ws, cleanSubtitleNam
   const cleanVideoName = `${name}-clean.mp4`;
   // select frames was taken from: https://github.com/rooty0/ffmpeg_video_cutter/tree/master
   const isGPU = !args.cpu;
+  const q = args.quality ? args.quality : args['10-bit'] ? '27' : '25';
   // prettier-ignore
   const filterGraphArgs = [
     '-y',
-    // '-report',
+    args.report ? '-report': '',
     '-hide_banner',
     '-v', 'error', '-stats',
     isGPU ? '-hwaccel' : '', isGPU ? 'cuda' : '',
@@ -146,11 +147,16 @@ async function filterGraphAndEncode(video, name, ext, cuts, ws, cleanSubtitleNam
     '-vf', `select='${cuts.join('+')}', setpts=N/FRAME_RATE/TB`,
     '-af', `aselect='${cuts.join('+')}', asetpts=N/SAMPLE_RATE/TB`,
     '-c:v', isGPU ? 'hevc_nvenc' : 'libx264',
-    isGPU ? '-preset': '-crf', isGPU ? 'fast' : '26',
+    isGPU ? '-preset': '-crf', isGPU ? 'medium' : q,
     '-c:a', 'aac',
     '-b:a', '128k',
     cleanVideoName
   ]
+  // prettier-ignore
+  if (isGPU) filterGraphArgs.splice(-1, 0, '-rc', 'vbr', '-cq', q, '-qmin',q,'-qmax', q, '-b:v', '0k');
+  // prettier-ignore
+  if (args['10-bit'])
+    filterGraphArgs.splice(-1, 0, '-profile:v', 'main10', '-pix_fmt', 'p010le');
 
   // add subtitles if exist.
   if (cleanSubtitleName) {
