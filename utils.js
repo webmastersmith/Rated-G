@@ -136,6 +136,7 @@ async function filterGraphAndEncode(video, name, ext, cuts, ws, cleanSubtitleNam
   // select frames was taken from: https://github.com/rooty0/ffmpeg_video_cutter/tree/master
   const isGPU = !args.cpu;
   const q = args.quality ? args.quality : args['10-bit'] ? '27' : '25';
+  const bitRate = args['bit-rate'] ? args['bit-rate'] : '128k';
   // prettier-ignore
   const filterGraphArgs = [
     '-y',
@@ -149,7 +150,7 @@ async function filterGraphAndEncode(video, name, ext, cuts, ws, cleanSubtitleNam
     '-c:v', isGPU ? 'hevc_nvenc' : 'libx264',
     isGPU ? '-preset': '-crf', isGPU ? 'medium' : q,
     '-c:a', 'aac',
-    '-b:a', '128k',
+    '-b:a', bitRate,
     cleanVideoName
   ]
   // prettier-ignore
