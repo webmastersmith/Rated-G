@@ -34,6 +34,9 @@ node clean.js --10-bit # encodes 10 bit. Doubles encode time.
 
 # Audio
 node clean.js --bit-rate=128k # 128k default. Bit rate for audio.
+
+# Example
+node clean.js --quality=24 --bit-rate=192k
 ```
 
 ## Subtitles
