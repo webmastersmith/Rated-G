@@ -26,7 +26,7 @@ node clean.js --cpu # if you want to use your CPU instead of GPU.
 node clean.js --report # ffmpeg debugging. ffmpeg creates it's own log file.
 
 # Quality
-# 1 (best, massive file size) <--> 51 (worst, smallest file size) 24-30 is best.
+# 1 (best, massive file size) <--> 51 (worst, smallest file size). 24-30 is best.
 node clean.js --quality=27 # 27 default for 10-bit. 25 default for 8-bit.
 
 # 10-bit -GPU only
