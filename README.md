@@ -35,8 +35,14 @@ node clean.js --10-bit # encodes 10 bit. Doubles encode time.
 # Audio
 node clean.js --bit-rate=128k # 128k default. Bit rate for audio.
 
+# Subtitles
+node clean.js --subtitle-number # pick the subtitle stream you want to extract.
+# view subtitles with ffprobe. Built into ffmpeg. -first subtitle is index 0.
+# ffprobe -loglevel error -select_streams s -show_entries stream=index:stream_tags=language -of csv=p=0 video.mkv
+
+
 # Example
-node clean.js --quality=24 --bit-rate=192k
+node clean.js --10-bit --quality=24 --bit-rate=192k
 ```
 
 ## Subtitles

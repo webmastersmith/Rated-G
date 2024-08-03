@@ -91,7 +91,8 @@ async function encodeVideo(name, joinedVideoName, ws, subTitles = false) {
  * @param {number} subNumber location of where subtitle is found.
  * @returns
  */
-async function extractSubtitle(video, subName, ws, subNumber = 0) {
+async function extractSubtitle(video, subName, ws) {
+  const subNumber = args['subtitle-number'] ? args['subtitle-number'] : 0;
   // prettier-ignore
   const ffmpegArgs = [
       '-hide_banner',
