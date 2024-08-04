@@ -136,7 +136,7 @@ async function filterGraphAndEncode(video, name, ext, cuts, ws, cleanSubtitleNam
   const cleanVideoName = `${name}-clean.mp4`;
   // select frames was taken from: https://github.com/rooty0/ffmpeg_video_cutter/tree/master
   const isGPU = !args.cpu;
-  const q = args.quality ? args.quality : args['10-bit'] ? '27' : '25';
+  const q = args.quality ? args.quality : '25';
   const bitRate = args['bit-rate'] ? args['bit-rate'] : '128k';
   // prettier-ignore
   const filterGraphArgs = [
