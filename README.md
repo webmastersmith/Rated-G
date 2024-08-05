@@ -26,7 +26,7 @@ node clean.js --cpu # if you want to use your CPU instead of GPU.
 node clean.js --report # ffmpeg debugging. ffmpeg creates it's own log file.
 
 # Quality=1-51 (best image <--> smaller file size)
-node clean.js --quality=25 # 25 default. 22-30 is best.
+node clean.js --quality=24 # 24 default. 22-30 is best.
 
 # 10-bit -GPU only
 node clean.js --10-bit # encodes 10 bit. Doubles encode time.
