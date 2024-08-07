@@ -24,9 +24,10 @@ node clean.js --clean # deletes all files and videos (including original), excep
 node clean.js --debug # verbose output. Does not delete files or videos.
 node clean.js --cpu # if you want to use your CPU instead of GPU.
 node clean.js --report # ffmpeg debugging. ffmpeg creates it's own log file.
+node clean.js --chapters # keep chapters when sanitizing video.
 
 # Quality=1-51 (best image <--> smaller file size)
-node clean.js --quality=24 # 24 default. 22-30 is best.
+node clean.js --quality=24 # 24 default. 18-30 is best.
 
 # 10-bit -GPU only
 node clean.js --10-bit # encodes 10 bit. Doubles encode time.

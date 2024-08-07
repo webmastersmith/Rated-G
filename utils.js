@@ -380,12 +380,14 @@ async function sanitizeVideo(name, ext, ws) {
     '-c:v', 'copy',
     '-c:a', 'copy',
     '-sn',
-    '-map_chapters', '-1',
     '-map_metadata', '-1',
     '-metadata', `creation_time=${new Date().toISOString()}`,
     '-metadata',`title="${name}.mp4"`,
     sanitizeVideoName
   ]
+  // default remove chapters
+  if (!args.chapters) sanitizeArgs.splice(-1, 0, '-map_chapters', '-1');
+
   const stdout = await spawnShell('ffmpeg', sanitizeArgs, ws);
   ws.write(`sanitizeVideo:\nstdout: ${stdout}\n\n`);
   // log new video metadata.
