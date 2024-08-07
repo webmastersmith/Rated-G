@@ -48,7 +48,7 @@ node clean.js --10-bit --quality=24 --bit-rate=192k
 ## Subtitles
 
 - Most video subtitles can be found online. Make sure the subtitle matches the video. Cuts to video will be wrong if subtitle is wrong.
-- Subtitles do not provide perfect alignment, but their really close. Editing the time can make sure to remove undesirable video and audio.
+- Sometimes subtitles do not provide perfect alignment, but their really close. Editing the subtitle file time can make sure to remove undesirable video and audio.
 - **Error** about reading subtitles:
   - Check the subtitle name is the same as video name. (e.g. `video.mp4`, `video.srt`).
   - The **subtitle file header is possible corrupted**. Copy contents to new file and save. Delete old file.
@@ -70,7 +70,7 @@ node clean.js --10-bit --quality=24 --bit-rate=192k
 ## FFmpeg Encoding
 
 - Once the video is cut, the timeline is broken. This can cause the audio and video to be out of sync during playback. Encoding fixes this.
-- GPU encoding is more than ten times faster than CPU encoding. The script is already setup for encoding with Nvidia GPU. If you get errors, find the codec that works for your pc hardware and fix the arguments in the **filterGraphAndEncode** function.
+- GPU encoding is faster than CPU encoding. The script is already setup for encoding with a Nvidia GPU. If you get errors, find the codec that works for your pc hardware and fix the arguments in the **filterGraphAndEncode** function.
 
 ```js
 // GPU example
