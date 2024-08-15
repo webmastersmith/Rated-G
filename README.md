@@ -8,6 +8,10 @@
 - [Nodejs](https://nodejs.org/en/download/package-manager) installed.
 - [ffmpeg](https://www.ffmpeg.org/download.html) installed.
 - It is better to find subtitles, they are more accurate. If you want to use the Video Swear Jar Docker Image, [Docker](https://docs.docker.com/engine/install/) must be installed.
+- If you have a **NVIDIA GPU**, you must download a Video codec package.
+  - My GPU **GeForce 1050Ti** drivers:
+  - [CUDA Toolkit 12.6](https://developer.nvidia.com/cuda-downloads)
+  - Get the toolkit for **your GPU**, or use the `-cpu` flag to only use the CPU.
 
 ## Simple Start
 
@@ -24,7 +28,7 @@ node clean.js --clean # deletes all files and videos (including original), excep
 node clean.js --debug # verbose output. Does not delete files or videos.
 node clean.js --cpu # if you want to use your CPU instead of GPU.
 node clean.js --report # ffmpeg debugging. ffmpeg creates it's own log file.
-node clean.js --chapters # keep chapters when sanitizing video.
+node clean.js --chapters # keep chapters when sanitizing video. default is remove chapters.
 
 # Quality=1-51 (best image <--> smaller file size)
 node clean.js --quality=24 # 24 default. 18-30 is best.

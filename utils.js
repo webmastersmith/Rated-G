@@ -155,7 +155,7 @@ async function filterGraphAndEncode(video, name, ext, cuts, ws, cleanSubtitleNam
     cleanVideoName
   ]
   // prettier-ignore
-  if (isGPU) filterGraphArgs.splice(-1, 0, '-rc', 'vbr', '-cq', q, '-qmin',q,'-qmax', q, '-b:v', '0k');
+  if (isGPU) filterGraphArgs.splice(-1, 0, '-rc:v', 'vbr', '-cq:v', q, '-qmin',q,'-qmax', q, '-b:v', '0k');
   // prettier-ignore
   if (args['10-bit'])
     filterGraphArgs.splice(-1, 0, '-profile:v', 'main10', '-pix_fmt', 'p010le');
@@ -165,7 +165,7 @@ async function filterGraphAndEncode(video, name, ext, cuts, ws, cleanSubtitleNam
     // insert subtitle name after video name.
     filterGraphArgs.splice(filterGraphArgs.indexOf(video) + 1, 0, '-i', cleanSubtitleName);
     // add rest of subtitle data.
-    filterGraphArgs.splice(-1, 0, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
+    filterGraphArgs.splice(-1, 0, '-c:s', `${name}-clean`, '-metadata:s:s:0', 'language=eng');
   }
 
   const stdout = await spawnShell(
