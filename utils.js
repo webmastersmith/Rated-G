@@ -165,7 +165,7 @@ async function filterGraphAndEncode(video, name, ext, cuts, ws, cleanSubtitleNam
     // insert subtitle name after video name.
     filterGraphArgs.splice(filterGraphArgs.indexOf(video) + 1, 0, '-i', cleanSubtitleName);
     // add rest of subtitle data.
-    filterGraphArgs.splice(-1, 0, '-c:s', `${name}-clean`, '-metadata:s:s:0', 'language=eng');
+    filterGraphArgs.splice(-1, 0, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
   }
 
   const stdout = await spawnShell(
