@@ -39,6 +39,7 @@
         if (/No swear words found/.test(out.stdout)) {
           console.log('\x1b[35m', 'Transcription done! No swear words found.');
           console.log('\x1b[0m', '');
+          ws.write('Transcription done! No swear words found.\n\n');
           return;
         }
         // encode output video with ffmpeg.
@@ -47,6 +48,8 @@
         if (!args.debug) deleteFiles(removedFiles);
         return;
       }
+    } else {
+      ws.write(`Subtitle ${name}.srt found!\n\n`);
     }
 
     // remove everything but audio and video.
