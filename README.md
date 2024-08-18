@@ -8,7 +8,7 @@
 - [Nodejs](https://nodejs.org/en/download/package-manager) installed.
 - [ffmpeg](https://www.ffmpeg.org/download.html) installed.
 - It is better to find subtitles, they are more accurate. If you want to use the Video Swear Jar Docker Image, [Docker](https://docs.docker.com/engine/install/) must be installed.
-- IF you want FFmpeg to user your GPU, you must download your GPU Video codec package.
+- If you want FFmpeg to user your GPU, you must download **your GPU Video codec package**.
   - e.g. **NVIDIA GeForce 1050Ti** codec package: [CUDA Toolkit 12.6](https://developer.nvidia.com/cuda-downloads)
   - Get the toolkit for **your GPU**, or use the `-cpu` flag to only use the CPU.
 
