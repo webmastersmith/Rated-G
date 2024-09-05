@@ -24,6 +24,7 @@
     ws.write(`getArgs:\nprocess.argv: ${JSON.stringify(process.argv)}\nargs: ${JSON.stringify(args)}\n\n`);
     ws.write(`getVideoNames:\n${videos.join('\n')}\n\n`);
 
+    // create state object to pass around.
     const state = {
       args,
       video,
@@ -46,10 +47,10 @@
       const subExist = await extractSubtitle(state);
       // if no subtitle found, use AI to transcribe video.
       if (!subExist) {
-        // returns string only if no swear words.
         state.transcribeVideo = true;
         // creates video with '-output' in name.
         const out = await transcribeVideo(state);
+        // returns string only if no swear words.
         console.log('out', out);
 
         // check if there are swear words.
