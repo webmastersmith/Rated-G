@@ -1,8 +1,6 @@
 const fs = require('fs');
 const swearWords = require('./swear-words.json');
 
-const args = getArgs();
-
 /**
  * Subtract or add floats.
  * @param {string} operator +|-
@@ -38,51 +36,56 @@ function containsSwearWords(text) {
 function deleteFiles(files) {
   for (const file of files) {
     fs.unlink(file, (e) => {
-      if (e) throw Error(e);
-      console.log('\x1b[34m', `${file} was deleted`);
-      console.log('\x1b[0m', '');
+      if (e) {
+        console.log('\x1b[34m', `File ${file} was not found!`);
+        console.log('\x1b[0m', '');
+      } else {
+        console.log('\x1b[34m', `${file} was deleted`);
+        console.log('\x1b[0m', '');
+      }
     });
   }
 }
 
-/**
- * ffmpeg encodes concatenated video. Fixes timestamp with audio and video.
- * @param {string} name Video name without extension.
- * @param {string} joinedVideoName Name of video.ext that needs encoding.
- * @param {boolean} subTitles true|false. Do you need to embed subtitles.
- * @returns string: Clean video name.
- */
-async function encodeVideo(name, joinedVideoName, ws, subTitles = false) {
-  // const cleanVideoName = `${name}-clean.mp4`
-  const cleanVideoName = `${name}-clean.mp4`;
-  if (args['no-encode']) return cleanVideoName;
-  const subTitleName = `${name}-clean.srt`;
-  // prettier-ignore
-  const encodeArgs = [
-    '-y',
-    '-hide_banner',
-    '-v', 'error', '-stats',
-    '-hwaccel', 'cuda',
-    '-i', joinedVideoName,
-    '-c:v', 'nvenc_hevc',
-    '-preset', 'fast',
-    '-c:a', 'aac',
-    '-b:a', '128k',
-    cleanVideoName
-  ]
-  // add subtitles if exist.
-  if (subTitles) {
-    // insert subtitle name after video input.
-    encodeArgs.splice(encodeArgs.indexOf(joinedVideoName) + 1, 0, '-i', subTitleName);
-    // add rest of subtitle data.
-    encodeArgs.splice(-1, 0, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
-  }
-  const stdout = await spawnShell('ffmpeg', encodeArgs, ws);
-  ws.write(`encodeVideo:\nstdout: ${stdout}\n\n`);
-  // log clean video metadata.
-  await getVideoMetadata(cleanVideoName, ws);
-  return cleanVideoName;
-}
+// /**
+//  * ffmpeg encodes concatenated video. Fixes timestamp with audio and video.
+//  * @param {string} name Video name without extension.
+//  * @param {string} joinedVideoName Name of video.ext that needs encoding.
+//  * @param {boolean} subTitles true|false. Do you need to embed subtitles.
+//  * @returns string: Clean video name.
+//  */
+// async function encodeVideo(state) {
+//   const { args, outputVideoName, cleanVideoName, subName, ws } = state;
+//   const isGPU = !args.cpu;
+//   if (args['no-encode']) return cleanVideoName;
+//   // prettier-ignore
+//   const encodeArgs = [
+//     '-y',
+//     '-hide_banner',
+//     '-v', 'error', '-stats',
+//     '-hwaccel', 'cuda',
+//     '-i', outputVideoName,
+//     '-c:v', 'nvenc_hevc',
+//     '-preset', 'medium',
+//     '-c:a', 'aac',
+//     '-b:a', '128k',
+//     cleanVideoName
+//   ]
+//   if (isGPU) filterGraphArgs.splice(-1, 0, '-rc:v', 'vbr', '-cq:v', q, '-qmin', q, '-qmax', q, '-b:v', '0k');
+
+//   // add subtitles if exist.
+//   if (fs.existsSync(subName)) {
+//     // insert subtitle name after video input.
+//     encodeArgs.splice(encodeArgs.indexOf(outputVideoName) + 1, 0, '-i', subName);
+//     // add rest of subtitle data.
+//     encodeArgs.splice(-1, 0, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
+//   }
+//   const stdout = await spawnShell('ffmpeg', encodeArgs, ws);
+//   ws.write(`encodeVideo:\nstdout: ${stdout}\n\n`);
+//   // log clean video metadata.
+//   await getVideoMetadata(state);
+//   return;
+// }
 
 /**
  *
@@ -91,7 +94,9 @@ async function encodeVideo(name, joinedVideoName, ws, subTitles = false) {
  * @param {number} subNumber location of where subtitle is found.
  * @returns
  */
-async function extractSubtitle(video, subName, ws) {
+async function extractSubtitle(state) {
+  const { video, args, subName, ws } = state;
+  // check args for subtitle position. Default first subtitle.
   const subNumber = args['subtitle-number'] ? args['subtitle-number'] : 0;
   // prettier-ignore
   const ffmpegArgs = [
@@ -101,15 +106,18 @@ async function extractSubtitle(video, subName, ws) {
       '-map', `0:s:${subNumber}?`,
       subName
     ]
+  console.log('\x1b[34m', `Could not find Subtitle. Trying to Extract ${subName}`);
+  console.log('\x1b[0m', '');
   try {
+    // will reject if no subtitle found.
     const stdout = await spawnShell('ffmpeg', ffmpegArgs, ws);
     ws.write(`extractSubtitles:\nstdout: ${stdout}\n\n`);
     console.log('\x1b[34m', `Extracted ${subName}`);
     console.log('\x1b[0m', '');
+    ws.write(`Extracted ${subName} from ${video}`);
     return true;
   } catch (error) {
-    console.log('No srt found!');
-    // throw Error(error)
+    console.log('No srt found!', error);
     return false;
   }
 }
@@ -132,8 +140,8 @@ function fixDecimal(num) {
  * @param {string[]} cuts  Video remove sections. {start, end}.
  * @returns Clean video name.
  */
-async function filterGraphAndEncode(video, name, ext, cuts, ws, cleanSubtitleName = '') {
-  const cleanVideoName = `${name}-clean.mp4`;
+async function filterGraphAndEncode(state, keeps = []) {
+  const { video, args, cleanVideoName, cleanSubName, transcribeVideo, ws } = state;
   // select frames was taken from: https://github.com/rooty0/ffmpeg_video_cutter/tree/master
   const isGPU = !args.cpu;
   const q = args.quality ? args.quality : '24';
@@ -146,8 +154,6 @@ async function filterGraphAndEncode(video, name, ext, cuts, ws, cleanSubtitleNam
     '-v', 'error', '-stats',
     isGPU ? '-hwaccel' : '', isGPU ? 'cuda' : '',
     '-i', video,
-    '-vf', `select='${cuts.join('+')}', setpts=N/FRAME_RATE/TB`,
-    '-af', `aselect='${cuts.join('+')}', asetpts=N/SAMPLE_RATE/TB`,
     '-c:v', isGPU ? 'hevc_nvenc' : 'libx264',
     isGPU ? '-preset': '-crf', isGPU ? 'medium' : q,
     '-c:a', 'aac',
@@ -155,15 +161,20 @@ async function filterGraphAndEncode(video, name, ext, cuts, ws, cleanSubtitleNam
     cleanVideoName
   ]
   // prettier-ignore
+  if (!transcribeVideo) filterGraphArgs.splice(filterGraphArgs.indexOf(video) + 1, 0, 
+   '-vf', `select='${keeps.join('+')}', setpts=N/FRAME_RATE/TB`,
+   '-af', `aselect='${keeps.join('+')}', asetpts=N/SAMPLE_RATE/TB`,
+  )
+  // prettier-ignore
   if (isGPU) filterGraphArgs.splice(-1, 0, '-rc:v', 'vbr', '-cq:v', q, '-qmin',q,'-qmax', q, '-b:v', '0k');
   // prettier-ignore
   if (args['10-bit'])
     filterGraphArgs.splice(-1, 0, '-profile:v', 'main10', '-pix_fmt', 'p010le');
 
   // add subtitles if exist.
-  if (cleanSubtitleName) {
+  if (fs.existsSync(cleanSubName)) {
     // insert subtitle name after video name.
-    filterGraphArgs.splice(filterGraphArgs.indexOf(video) + 1, 0, '-i', cleanSubtitleName);
+    filterGraphArgs.splice(filterGraphArgs.indexOf(video) + 1, 0, '-i', cleanSubName);
     // add rest of subtitle data.
     filterGraphArgs.splice(-1, 0, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
   }
@@ -176,7 +187,7 @@ async function filterGraphAndEncode(video, name, ext, cuts, ws, cleanSubtitleNam
   ws.write(`filterGraphAndEncode:\nstdout: ${stdout}\n\n`);
   // log clean video metadata.
   await getVideoMetadata(cleanVideoName, ws);
-  return cleanVideoName;
+  return;
 }
 
 /**
@@ -213,9 +224,10 @@ function getArgs() {
  * @param {string} srtFile Name of subtitle file.
  * @returns object: { newSrt, cutArr, cutTxt }
  */
-async function getCuts(name, ext, srtFile, ws) {
+async function getCuts(state) {
+  const { name, args, ext, subName, cleanSubName, ws } = state;
   // turn subtitles into string[].
-  const subtitles = splitSubtitles(srtFile, ws);
+  const subtitles = splitSubtitles(subName, ws);
 
   // new srt.
   const newSrtArr = [];
@@ -289,9 +301,8 @@ ${text}
 `);
     }, '');
   // write the file.
-  const cleanSubtitleName = `${name}-clean.srt`;
-  fs.writeFileSync(cleanSubtitleName, cleanSubtitleStr);
-  ws.write(`${cleanSubtitleName}\n${cleanSubtitleStr}\n\n`);
+  fs.writeFileSync(cleanSubName, cleanSubtitleStr);
+  ws.write(`${cleanSubName}\n${cleanSubtitleStr}\n\n`);
 
   // Create string of cut words.
   const swearWordsTxt = cutTxtArr.reduce((acc, cur) => {
@@ -300,7 +311,7 @@ ${text}
   }, '');
   // log
   ws.write(`getCuts: -Swear Words\n${swearWordsTxt}\n\n`);
-  return { cleanSubtitleName, keeps };
+  return keeps;
 }
 
 /**
@@ -341,7 +352,7 @@ async function getVideoDuration(name, ext, ws) {
 async function getVideoMetadata(video, ws) {
   const metadataArgs = ['-hide_banner', '-i', video];
   const stdout = await spawnShell('ffprobe', metadataArgs, ws);
-  ws.write(`${video} metdata\n${stdout}\n\n`);
+  ws.write(`${video} Metadata\n${stdout}\n\n`);
   return;
 }
 
@@ -350,9 +361,12 @@ async function getVideoMetadata(video, ws) {
  * @returns string[]: List of video names.
  */
 function getVideoNames() {
+  // filter for common video types.
   const vidext = ['\\.mp4$', '\\.mkv$', '\\.avi$', '\\.webm$'];
   const extRegex = new RegExp(vidext.join('|'));
+  // filter out videos made from the program.
   const avoidVideos = ['output', 'clean', 'temp', 'sanitize'];
+  // create video list, filtering videos.
   const avoidRegex = new RegExp(avoidVideos.map((a) => vidext.map((v) => `${a}${v}`).join('|')).join('|'));
   // console.log('regex', avoidRegex);
   const videos = fs
@@ -369,8 +383,8 @@ function getVideoNames() {
  * @param {string} ext Video extension
  * @returns string: sanitizeVideoName
  */
-async function sanitizeVideo(name, ext, ws) {
-  const sanitizeVideoName = `${name}-sanitize.${ext}`;
+async function sanitizeVideo(state) {
+  const { name, ext, args, sanitizedVideoName, ws } = state;
   // prettier-ignore
   const sanitizeArgs = [
     '-y',
@@ -383,7 +397,7 @@ async function sanitizeVideo(name, ext, ws) {
     '-map_metadata', '-1',
     '-metadata', `creation_time=${new Date().toISOString()}`,
     '-metadata',`title="${name}.mp4"`,
-    sanitizeVideoName
+    sanitizedVideoName
   ]
   // default remove chapters
   if (!args.chapters) sanitizeArgs.splice(-1, 0, '-map_chapters', '-1');
@@ -391,8 +405,8 @@ async function sanitizeVideo(name, ext, ws) {
   const stdout = await spawnShell('ffmpeg', sanitizeArgs, ws);
   ws.write(`sanitizeVideo:\nstdout: ${stdout}\n\n`);
   // log new video metadata.
-  await getVideoMetadata(sanitizeVideoName, ws);
-  return sanitizeVideoName;
+  await getVideoMetadata(sanitizedVideoName, ws);
+  return;
 }
 
 /**
@@ -418,12 +432,12 @@ function secondsToTime(time) {
  * Run OS programs from Nodejs environment.
  * @param {string} command bash command of program
  * @param {array} spawnArgs array of arguments. -No spaces. Must be comma separated.
- * @returns object: {stdout, stderr}
+ * @returns string, stdout
  */
 async function spawnShell(command, spawnArgs = [], ws) {
   const { spawn } = require('child_process');
   return new Promise((resolve, reject) => {
-    const msg = `running command: ${command} ${spawnArgs.join(' ')}\n\n`;
+    const msg = `Running command: ${command} ${spawnArgs.join(' ')}\n\n`;
     ws.write(msg);
     console.log(msg);
     const process = spawn(command, spawnArgs);
@@ -447,6 +461,7 @@ async function spawnShell(command, spawnArgs = [], ws) {
       }
     });
     process.on('error', (error) => {
+      ws.write(error.toString());
       reject(error);
     });
   });
@@ -502,9 +517,9 @@ function timeToSeconds(time) {
  * @param {string} video Video name and extension.
  * @returns object: { stdout: string stderr: string }
  */
-async function transcribeVideo(video, ws) {
-  const msg =
-    'Could not extract subtitles.\nStarting Docker with AI transcription.\nThis will take a few minutes to transcribe video.\n\n';
+async function transcribeVideo(state) {
+  const { video, ws } = state;
+  const msg = `Could not extract subtitles from ${video}.\nStarting Docker with AI transcription.\nThis will take a few minutes to transcribe video.\n\n`;
   ws.write(msg);
   console.log('\x1b[35m', msg);
   console.log('\x1b[0m', '');
@@ -526,7 +541,7 @@ async function transcribeVideo(video, ws) {
 module.exports = {
   containsSwearWords,
   deleteFiles,
-  encodeVideo,
+  // encodeVideo,
   extractSubtitle,
   filterGraphAndEncode,
   getArgs,
