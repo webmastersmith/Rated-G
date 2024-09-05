@@ -30,69 +30,32 @@ function containsSwearWords(text) {
 }
 
 /**
- * Async file deletion.
+ * File deletion.
  * @param {string[]} files File names to be deleted.
  */
-function deleteFiles(files) {
+function deleteFiles(files, ws) {
+  ws.write(`Deleting files: ${files.join(', ')}\n`);
   for (const file of files) {
-    fs.unlink(file, (e) => {
-      if (e) {
-        console.log('\x1b[34m', `File ${file} was not found!`);
-        console.log('\x1b[0m', '');
-      } else {
-        console.log('\x1b[34m', `${file} was deleted`);
-        console.log('\x1b[0m', '');
-      }
-    });
+    if (fs.existsSync(file)) {
+      fs.unlinkSync(file);
+      console.log('\x1b[34m', `${file} was deleted`);
+      console.log('\x1b[0m', '');
+      ws.write(`${file} was deleted\n`);
+    } else {
+      console.log('\x1b[34m', `File ${file} was not found!`);
+      console.log('\x1b[0m', '');
+      ws.write(`File ${file} was not found!\n`);
+    }
   }
 }
 
-// /**
-//  * ffmpeg encodes concatenated video. Fixes timestamp with audio and video.
-//  * @param {string} name Video name without extension.
-//  * @param {string} joinedVideoName Name of video.ext that needs encoding.
-//  * @param {boolean} subTitles true|false. Do you need to embed subtitles.
-//  * @returns string: Clean video name.
-//  */
-// async function encodeVideo(state) {
-//   const { args, outputVideoName, cleanVideoName, subName, ws } = state;
-//   const isGPU = !args.cpu;
-//   if (args['no-encode']) return cleanVideoName;
-//   // prettier-ignore
-//   const encodeArgs = [
-//     '-y',
-//     '-hide_banner',
-//     '-v', 'error', '-stats',
-//     '-hwaccel', 'cuda',
-//     '-i', outputVideoName,
-//     '-c:v', 'nvenc_hevc',
-//     '-preset', 'medium',
-//     '-c:a', 'aac',
-//     '-b:a', '128k',
-//     cleanVideoName
-//   ]
-//   if (isGPU) filterGraphArgs.splice(-1, 0, '-rc:v', 'vbr', '-cq:v', q, '-qmin', q, '-qmax', q, '-b:v', '0k');
-
-//   // add subtitles if exist.
-//   if (fs.existsSync(subName)) {
-//     // insert subtitle name after video input.
-//     encodeArgs.splice(encodeArgs.indexOf(outputVideoName) + 1, 0, '-i', subName);
-//     // add rest of subtitle data.
-//     encodeArgs.splice(-1, 0, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
-//   }
-//   const stdout = await spawnShell('ffmpeg', encodeArgs, ws);
-//   ws.write(`encodeVideo:\nstdout: ${stdout}\n\n`);
-//   // log clean video metadata.
-//   await getVideoMetadata(state);
-//   return;
-// }
-
 /**
- *
+ * Extracts subtitles from video.
+ * The function is called when no subtitle is found. It tries to extract subtitle from video. If unsuccessful, calls transcribeVideo function.
  * @param {string} video Video name and extension.
  * @param {string} subName output name of subtitle
  * @param {number} subNumber location of where subtitle is found.
- * @returns
+ * @returns boolean. If false, transcribeVideo will be called.
  */
 async function extractSubtitle(state) {
   const { video, args, subName, ws } = state;
@@ -108,6 +71,7 @@ async function extractSubtitle(state) {
     ]
   console.log('\x1b[34m', `Could not find Subtitle. Trying to Extract ${subName}`);
   console.log('\x1b[0m', '');
+  ws.write(`Could not find subtitle ${subName}. Trying to extract from ${video}.\n\n`);
   try {
     // will reject if no subtitle found.
     const stdout = await spawnShell('ffmpeg', ffmpegArgs, ws);
@@ -118,12 +82,13 @@ async function extractSubtitle(state) {
     return true;
   } catch (error) {
     console.log('No srt found!', error);
+    ws.write(`No srt found! ${error}\n\n`);
     return false;
   }
 }
 
 /**
- * Because JavaScript math can return precision floating point numbers, this corrects the float to a set decimal point.
+ * Because JavaScript math can return precision floating point numbers, this corrects the float to the third decimal point.
  * pass in a number after performing math operation. Fixes float to the third decimal point.
  * @param {float} num float
  * @returns float: same number, corrected to third decimal point.
@@ -133,8 +98,9 @@ function fixDecimal(num) {
 }
 
 /**
- * Compares each frame number to see if it is 'between' the two numbers.
- * The 'between' function acts as a filter: current frame time between the two numbers, frame is passed to encoder.
+ * Drop marked frames and Re-encode video.
+ * FFmpeg compares each frame number to see if it is 'between' the two numbers.
+ * The FFmpeg 'between' function acts as a filter. It compares the current frame time, and the between(start, stop). If number is 'between' the two numbers(inclusive), frame is passed to encoder.
  * @param {string} name Video name without extension.
  * @param {string} ext Video extension.
  * @param {string[]} cuts  Video remove sections. {start, end}.
@@ -160,6 +126,7 @@ async function filterGraphAndEncode(state, keeps = []) {
     '-b:a', bitRate,
     cleanVideoName
   ]
+  // If transcribe video, no cuts are available.
   // prettier-ignore
   if (!transcribeVideo) filterGraphArgs.splice(filterGraphArgs.indexOf(video) + 1, 0, 
    '-vf', `select='${keeps.join('+')}', setpts=N/FRAME_RATE/TB`,
@@ -222,7 +189,7 @@ function getArgs() {
  * Use subtitles file to find swear words, and timestamps. Create video slice timestamps and clean subtitles file.
  * @param {string} video Video name and extension.
  * @param {string} srtFile Name of subtitle file.
- * @returns object: { newSrt, cutArr, cutTxt }
+ * @returns video cut points array.
  */
 async function getCuts(state) {
   const { name, args, ext, subName, cleanSubName, ws } = state;
@@ -322,6 +289,7 @@ ${text}
 function getName(name) {
   const videoName = name.split('.');
   const ext = videoName.pop();
+  // video name may have more than one decimal in name.
   return { name: videoName.join('.'), ext };
 }
 
@@ -349,11 +317,22 @@ async function getVideoDuration(name, ext, ws) {
   return duration;
 }
 
+/**
+ * FFprobe to get the Video metadata. Record to log file.
+ * @param {string} video name of video
+ * @param {object} ws writeStream
+ * @returns undefined
+ */
 async function getVideoMetadata(video, ws) {
-  const metadataArgs = ['-hide_banner', '-i', video];
-  const stdout = await spawnShell('ffprobe', metadataArgs, ws);
-  ws.write(`${video} Metadata\n${stdout}\n\n`);
-  return;
+  try {
+    const metadataArgs = ['-hide_banner', '-i', video];
+    const stdout = await spawnShell('ffprobe', metadataArgs, ws);
+    ws.write(`${video} Metadata\n${stdout}\n\n`);
+    return;
+  } catch (error) {
+    ws.write(`getVideoMetadata Error: ${error}\n\n`);
+    throw new Error(error);
+  }
 }
 
 /**
@@ -410,7 +389,7 @@ async function sanitizeVideo(state) {
 }
 
 /**
- *
+ * Convert seconds,milli back to Time.
  * @param {number} time Time in seconds and milliseconds
  * @returns string. '00:00:00,000'
  */
@@ -437,36 +416,51 @@ function secondsToTime(time) {
 async function spawnShell(command, spawnArgs = [], ws) {
   const { spawn } = require('child_process');
   return new Promise((resolve, reject) => {
-    const msg = `Running command: ${command} ${spawnArgs.join(' ')}\n\n`;
-    ws.write(msg);
-    console.log(msg);
-    const process = spawn(command, spawnArgs);
     let stdout = '';
-    process.stdout.on('data', (data) => {
-      console.log(data.toString());
-      stdout += data;
-    });
-    process.stderr.on('data', (data) => {
-      console.log(data.toString());
-      stdout += data;
-    });
-    process.on('close', (code) => {
-      if (code === 0) {
-        resolve(stdout);
-      } else {
-        const error = new Error(`Command "${command} ${spawnArgs.join(' ')}" exited with code ${code}`);
-        error.code = code;
-        error.stdout = stdout;
+    try {
+      const msg = `Running command: ${command} ${spawnArgs.join(' ')}\n\n`;
+      ws.write(msg);
+      console.log(msg);
+      const process = spawn(command, spawnArgs);
+      process.stdout.on('data', (data) => {
+        console.log(data.toString());
+        stdout += data;
+      });
+      process.stderr.on('data', (data) => {
+        console.log(data.toString());
+        stdout += data;
+      });
+      process.on('close', (code) => {
+        if (code === 0) {
+          resolve(stdout);
+        } else {
+          const error = new Error(`Command "${command} ${spawnArgs.join(' ')}" exited with code ${code}`);
+          error.code = code;
+          error.stdout = stdout;
+          ws.write(
+            `Error: Command "${command} ${spawnArgs.join(' ')}" exited with code ${code}.\n${stdout}\n\n`
+          );
+          reject(error);
+        }
+      });
+      process.on('error', (error) => {
+        ws.write(error.toString());
         reject(error);
-      }
-    });
-    process.on('error', (error) => {
-      ws.write(error.toString());
+      });
+    } catch (error) {
+      // prettier-ignore
+      ws.write(`Error: Command "${command} ${spawnArgs.join(' ')}" exited with error.\nSTDOUT: ${stdout}\nERROR: ${e}\n\n`);
       reject(error);
-    });
+    }
   });
 }
 
+/**
+ *
+ * @param {string} subTitleName subTitle name
+ * @param {object} ws writeStream
+ * @returns string[] each timestamp separated into sections.
+ */
 function splitSubtitles(subTitleName, ws) {
   const srt = fs.readFileSync(subTitleName, 'utf-8');
   // read srt, split into blocks. -convert to object.
@@ -514,6 +508,7 @@ function timeToSeconds(time) {
 
 /**
  * Docker must be running. Pulls the Video-Swear-Jar image. AI transcribes the audio to text and outputs a clean version of video.
+ * // https://github.com/jveldboom/video-swear-jar
  * @param {string} video Video name and extension.
  * @returns object: { stdout: string stderr: string }
  */
@@ -541,7 +536,6 @@ async function transcribeVideo(state) {
 module.exports = {
   containsSwearWords,
   deleteFiles,
-  // encodeVideo,
   extractSubtitle,
   filterGraphAndEncode,
   getArgs,

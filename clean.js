@@ -2,7 +2,6 @@
   const fs = require('fs');
   const {
     deleteFiles,
-    // encodeVideo,
     extractSubtitle,
     filterGraphAndEncode,
     getArgs,
@@ -65,7 +64,7 @@
         // fix cut video with ffmpeg.
         await filterGraphAndEncode(state);
         const removedFiles = [`${name}-cut.txt`, `${name}.json`, state.video, `${name}-cut-words.txt`];
-        if (!args.debug) deleteFiles(removedFiles);
+        if (!args.debug) deleteFiles(removedFiles, state.ws);
         continue;
       }
     } else {
@@ -87,7 +86,7 @@
     // remove everything but clean video.
     if (args.clean) deletes.push(state.video, state.subName, state.logName);
     // if debug flag is passed, prevent deletion of files.
-    if (!args.debug) deleteFiles(deletes);
+    if (!args.debug) deleteFiles(deletes, state.ws);
     ws.end();
   }
 })();
