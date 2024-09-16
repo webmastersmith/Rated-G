@@ -37,7 +37,6 @@ node clean.js --10-bit # encodes 10 bit. Doubles encode time.
 
 # Audio
 node clean.js --bit-rate=128k # 128k default. Bit rate for audio.
-node clean.js --audio-number=0 # 0 default. Choose audio stream.
 
 # Subtitles
 node clean.js --subtitle-number=0 # default is 0 (first subtitle). Pick the subtitle stream you want to extract.
