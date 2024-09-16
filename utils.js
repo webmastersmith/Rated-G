@@ -59,14 +59,13 @@ function deleteFiles(files, ws) {
  */
 async function extractSubtitle(state) {
   const { video, args, subName, ws } = state;
-  // check args for subtitle position. Default first subtitle.
-  const subNumber = args['subtitle-number'] ? args['subtitle-number'] : 0;
   // prettier-ignore
   const ffmpegArgs = [
-      '-hide_banner',
-      '-v', 'error',
-      '-i', video,
-      '-map', `0:s:${subNumber}?`,
+    '-hide_banner',
+    '-v', 'error',
+    '-i', video,
+      // subtitle number. Default is first subtitles.
+      '-map', `0:s:${args['subtitle-number'] ? args['subtitle-number'] : 0}`,
       subName
     ]
   console.log('\x1b[34m', `Could not find Subtitle. Trying to Extract ${subName}`);
@@ -107,7 +106,7 @@ function fixDecimal(num) {
  * @returns Clean video name.
  */
 async function filterGraphAndEncode(state, keeps = []) {
-  const { video, args, cleanVideoName, cleanSubName, transcribeVideo, ws } = state;
+  const { sanitizedVideoName, args, cleanVideoName, cleanSubName, transcribeVideo, ws } = state;
   // select frames was taken from: https://github.com/rooty0/ffmpeg_video_cutter/tree/master
   const isGPU = !args.cpu;
   const q = args.quality ? args.quality : '24';
@@ -119,7 +118,7 @@ async function filterGraphAndEncode(state, keeps = []) {
     '-hide_banner',
     '-v', 'error', '-stats',
     isGPU ? '-hwaccel' : '', isGPU ? 'cuda' : '',
-    '-i', video,
+    '-i', sanitizedVideoName,
     '-c:v', isGPU ? 'hevc_nvenc' : 'libx264',
     isGPU ? '-preset': '-crf', isGPU ? 'medium' : q,
     '-c:a', 'aac',
@@ -128,7 +127,7 @@ async function filterGraphAndEncode(state, keeps = []) {
   ]
   // If transcribe video, no cuts are available.
   // prettier-ignore
-  if (!transcribeVideo) filterGraphArgs.splice(filterGraphArgs.indexOf(video) + 1, 0, 
+  if (!transcribeVideo) filterGraphArgs.splice(filterGraphArgs.indexOf(sanitizedVideoName) + 1, 0, 
    '-vf', `select='${keeps.join('+')}', setpts=N/FRAME_RATE/TB`,
    '-af', `aselect='${keeps.join('+')}', asetpts=N/SAMPLE_RATE/TB`,
   )
@@ -141,7 +140,7 @@ async function filterGraphAndEncode(state, keeps = []) {
   // add subtitles if exist.
   if (fs.existsSync(cleanSubName)) {
     // insert subtitle name after video name.
-    filterGraphArgs.splice(filterGraphArgs.indexOf(video) + 1, 0, '-i', cleanSubName);
+    filterGraphArgs.splice(filterGraphArgs.indexOf(sanitizedVideoName) + 1, 0, '-i', cleanSubName);
     // add rest of subtitle data.
     filterGraphArgs.splice(-1, 0, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
   }
@@ -373,9 +372,12 @@ async function sanitizeVideo(state) {
     '-c:v', 'copy',
     '-c:a', 'copy',
     '-sn',
-    '-map_metadata', '-1',
+    '-map_metadata', '-1', // remove existing metadata.
     '-metadata', `creation_time=${new Date().toISOString()}`,
     '-metadata',`title="${name}.mp4"`,
+    '-map', '0:v', // copy all video streams.
+    // copy all audio streams(default), or choose single audio stream.
+    '-map', `0:a${args['audio-number'] ? ':' +args['audio-number'] : ''}`,
     sanitizedVideoName
   ]
   // default remove chapters
