@@ -124,6 +124,7 @@ async function filterGraphAndEncode(state, keeps = []) {
     isGPU ? '-preset': '-crf', isGPU ? 'medium' : q,
     '-c:a', 'aac',
     '-b:a', bitRate,
+    '-map', `0:a:${args['audio-number'] ? args['audio-number'] : 0}`,
     cleanVideoName
   ]
   // If transcribe video, no cuts are available.
