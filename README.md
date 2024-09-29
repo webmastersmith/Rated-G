@@ -23,7 +23,8 @@
 ## Flags
 
 ```sh
-node clean.js --clean # deletes all files and videos (including original), except clean video.
+node clean.js --clean # deletes all files and videos (including original), except clean video and log file.
+node clean.js --clean-all # deletes all files and videos (including original) except clean video.
 node clean.js --debug # verbose output. Does not delete files or videos.
 node clean.js --cpu # if you want to use your CPU instead of GPU.
 node clean.js --report # ffmpeg debugging. ffmpeg creates it's own log file.

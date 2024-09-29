@@ -84,7 +84,8 @@
     // delete working files.
     const deletes = [state.sanitizedVideoName, state.cleanSubName];
     // remove everything but clean video.
-    if (args.clean) deletes.push(state.video, state.subName, state.logName);
+    if (args.clean) deletes.push(state.video, state.subName);
+    if (args['clean-all']) deletes.push(state.video, state.subName, state.logName);
     // if debug flag is passed, prevent deletion of files.
     if (!args.debug) deleteFiles(deletes, state.ws);
     ws.end();
