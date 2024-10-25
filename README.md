@@ -34,7 +34,7 @@ node clean.js --chapters # keep chapters when sanitizing video. default is remov
 node clean.js --quality=24 # 24 default. 18-30 is best.
 
 # 10-bit -GPU only
-node clean.js --10-bit # encodes 10 bit. Doubles encode time.
+node clean.js --10-bit # encodes 10 bit. For videos already encoded to 10 bit. Increases encode time.
 
 # Audio
 node clean.js --bit-rate=128k # 128k default. Bit rate for audio.
