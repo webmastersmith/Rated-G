@@ -36,6 +36,9 @@ node clean.js --quality=24 # 24 default. 18-30 is best.
 # 10-bit -GPU only
 node clean.js --10-bit # encodes 10 bit. For videos already encoded to 10 bit. Increases encode time.
 
+# Re-Encode
+node clean.js --re-encode # bad frames create audio sync issues. re-encode video to fix bad frames.
+
 # Audio
 node clean.js --bit-rate=128k # 128k default. Bit rate for audio.
 node clean.js --audio-number=0 # 0 default. Choose audio track.

@@ -38,6 +38,8 @@
       transcribeVideo: false,
       ws,
     };
+    // console.log(state);
+
     // log original video metadata.
     await getVideoMetadata(state.video, ws);
 

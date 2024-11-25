@@ -125,14 +125,16 @@ async function filterGraphAndEncode(state, keeps = []) {
     '-b:a', bitRate,
     cleanVideoName
   ]
-  // If transcribe video, no cuts are available.
+  // If transcribe video, no cuts are available. Insert video/audio cuts after 'sanatizedVideoName'.
   // prettier-ignore
-  if (!transcribeVideo) filterGraphArgs.splice(filterGraphArgs.indexOf(sanitizedVideoName) + 1, 0, 
+  if (!transcribeVideo || !args['re-encode']) filterGraphArgs.splice(filterGraphArgs.indexOf(sanitizedVideoName) + 1, 0,
    '-vf', `select='${keeps.join('+')}', setpts=N/FRAME_RATE/TB`,
    '-af', `aselect='${keeps.join('+')}', asetpts=N/SAMPLE_RATE/TB`,
   )
+  // Add GPU settings.
   // prettier-ignore
   if (isGPU) filterGraphArgs.splice(-1, 0, '-rc:v', 'vbr', '-cq:v', q, '-qmin',q,'-qmax', q, '-b:v', '0k');
+  // Add 10 bit settings.
   // prettier-ignore
   if (args['10-bit'])
     filterGraphArgs.splice(-1, 0, '-profile:v', 'main10', '-pix_fmt', 'p010le');
@@ -266,8 +268,8 @@ ${text}
 
 `);
     }, '');
-  // write the file.
-  fs.writeFileSync(cleanSubName, cleanSubtitleStr);
+  // write the clean subtitles. -when just re-encoding video to fix bad frames, no subtitles needed.
+  if (!args['re-encode']) fs.writeFileSync(cleanSubName, cleanSubtitleStr);
   ws.write(`${cleanSubName}\n${cleanSubtitleStr}\n\n`);
 
   // Create string of cut words.
