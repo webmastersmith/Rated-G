@@ -112,40 +112,50 @@ async function filterGraphAndEncode(state, keeps = []) {
   const q = args.quality ? args.quality : '24';
   const bitRate = args['bit-rate'] ? args['bit-rate'] : '128k';
   // prettier-ignore
+  const gpu = [
+    '-threads', 1,
+    '-hwaccel', 'nvdec',
+    '-hwaccel_device', 0, // choose first gpu.
+    '-hwaccel_output_format', 'cuda'
+  ]
+  const tenBit = ['-profile:v', 'main10', '-pix_fmt', 'p010le'];
+  // prettier-ignore
+  const gpuEncoder = [
+    '-c:v', 'h264_nvenc',
+    '-gpu:v', 0,
+    '-cq:v', q,
+    '-rc:v', 'vbr',
+    '-tune:v', 'll',
+    '-preset:v', 'p1',
+    '-b:v', 0,
+    '-maxrate:v', '5000k',
+    '-bufsize:v', '5000k',
+    ...(args['10-bit'] ? tenBit : '')
+  ]
+  const cpuEncoder = ['-c:v', 'libx264'];
+  const subNameArr = ['-i', cleanSubName];
+  const subTitleExist = fs.existsSync(cleanSubName);
+  const subTitleMeta = ['-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng'];
+  // prettier-ignore
+  const videoCuts = [
+    '-vf', `select='${keeps.join('+')}', setpts=N/FRAME_RATE/TB`,
+    '-af', `aselect='${keeps.join('+')}', asetpts=N/SAMPLE_RATE/TB`, 
+  ]
+  // prettier-ignore
   const filterGraphArgs = [
     '-y',
-    args.report ? '-report': '',
+    args.report ? '-report': '', // turn on ffmpeg logging.
     '-hide_banner',
     '-v', 'error', '-stats',
-    isGPU ? '-hwaccel' : '', isGPU ? 'cuda' : '',
+    ...(isGPU ? gpu : ''),
     '-i', sanitizedVideoName,
-    '-c:v', isGPU ? 'hevc_nvenc' : 'libx264',
-    isGPU ? '-preset': '-crf', isGPU ? 'medium' : q,
+    ...(subTitleExist ? subNameArr : ''),
+    ...(!transcribeVideo || !args['re-encode'] ? videoCuts :''),
+    ...(isGPU ? gpuEncoder : cpuEncoder),
     '-c:a', 'aac',
-    '-b:a', bitRate,
+    ...(subTitleExist ? subTitleMeta : ''),
     cleanVideoName
   ]
-  // If transcribe video, no cuts are available. Insert video/audio cuts after 'sanatizedVideoName'.
-  // prettier-ignore
-  if (!transcribeVideo || !args['re-encode']) filterGraphArgs.splice(filterGraphArgs.indexOf(sanitizedVideoName) + 1, 0,
-   '-vf', `select='${keeps.join('+')}', setpts=N/FRAME_RATE/TB`,
-   '-af', `aselect='${keeps.join('+')}', asetpts=N/SAMPLE_RATE/TB`,
-  )
-  // Add GPU settings.
-  // prettier-ignore
-  if (isGPU) filterGraphArgs.splice(-1, 0, '-rc:v', 'vbr', '-cq:v', q, '-qmin',q,'-qmax', q, '-b:v', '0k');
-  // Add 10 bit settings.
-  // prettier-ignore
-  if (args['10-bit'])
-    filterGraphArgs.splice(-1, 0, '-profile:v', 'main10', '-pix_fmt', 'p010le');
-
-  // add subtitles if exist.
-  if (fs.existsSync(cleanSubName)) {
-    // insert subtitle name after video name.
-    filterGraphArgs.splice(filterGraphArgs.indexOf(sanitizedVideoName) + 1, 0, '-i', cleanSubName);
-    // add rest of subtitle data.
-    filterGraphArgs.splice(-1, 0, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
-  }
 
   const stdout = await spawnShell(
     'ffmpeg',
