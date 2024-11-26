@@ -31,7 +31,8 @@
       ext,
       logName,
       subName: `${name}.srt`,
-      sanitizedVideoName: `${name}-sanitize.${ext}`,
+      sanitizedVideoName: `${name}-sanitize.mp4`,
+      sanitizedReEncodeName: `${name}-re-encode.mp4`,
       outputVideoName: `${name}-output.${ext}`,
       cleanSubName: `${name}-clean.srt`,
       cleanVideoName: `${name}-clean.mp4`,
@@ -80,11 +81,19 @@
     // search subtitles for swear words. Create cleaned subtitles and cut points.
     const keeps = await getCuts(state);
 
-    // encode video from cut points.
+    // encode video from cut points. If audio sync issues re-encode is needed.
+    // If re-encode is true, no cuts will be made on first encoding to fix bad video/audio segments.
     await filterGraphAndEncode(state, keeps);
+    // check if video needs re-encoding?
+    if (args['re-encode']) {
+      state.sanitizedVideoName = state.sanitizedReEncodeName;
+      state.args['re-encode'] = false;
+      ws.write(`State after Re-Encode ----------------\n ${JSON.stringify(state)}\n\n`);
+      await filterGraphAndEncode(state, keeps);
+    }
 
     // delete working files.
-    const deletes = [state.sanitizedVideoName, state.cleanSubName];
+    const deletes = [state.sanitizedVideoName, state.cleanSubName, state.sanitizedReEncodeName];
     // remove everything but clean video.
     if (args.clean) deletes.push(state.video, state.subName);
     if (args['clean-all']) deletes.push(state.video, state.subName, state.logName);

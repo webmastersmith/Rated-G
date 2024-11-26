@@ -106,11 +106,19 @@ function fixDecimal(num) {
  * @returns Clean video name.
  */
 async function filterGraphAndEncode(state, keeps = []) {
-  const { sanitizedVideoName, args, cleanVideoName, cleanSubName, transcribeVideo, ws } = state;
+  const {
+    sanitizedVideoName,
+    sanitizedReEncodeName,
+    args,
+    cleanVideoName,
+    cleanSubName,
+    transcribeVideo,
+    ws,
+  } = state;
   // select frames was taken from: https://github.com/rooty0/ffmpeg_video_cutter/tree/master
   const isGPU = !args.cpu;
-  const q = args.quality ? args.quality : '24';
-  const bitRate = args['bit-rate'] ? args['bit-rate'] : '128k';
+  const q = args['re-encode'] ? '22' : args.quality ? args.quality : '24';
+  // const bitRate = args['bit-rate'] ? args['bit-rate'] : '128k';
   // prettier-ignore
   const gpu = [
     '-threads', 1,
@@ -119,9 +127,11 @@ async function filterGraphAndEncode(state, keeps = []) {
     '-hwaccel_output_format', 'cuda'
   ]
   const tenBit = ['-profile:v', 'main10', '-pix_fmt', 'p010le'];
+  const gpuEncoderTenBit = ['-c:v', 'hevc_nvenc'];
+  const gpuEncoderEightBit = ['-c:v', 'h264_nvenc'];
   // prettier-ignore
   const gpuEncoder = [
-    '-c:v', 'h264_nvenc',
+    ...(args['10-bit'] ? gpuEncoderTenBit : gpuEncoderEightBit),
     '-gpu:v', 0,
     '-cq:v', q,
     '-rc:v', 'vbr',
@@ -132,14 +142,14 @@ async function filterGraphAndEncode(state, keeps = []) {
     '-bufsize:v', '5000k',
     ...(args['10-bit'] ? tenBit : '')
   ]
-  const cpuEncoder = ['-c:v', 'libx264'];
-  const subNameArr = ['-i', cleanSubName];
-  const subTitleExist = fs.existsSync(cleanSubName);
+  const cpuEncoder = ['-c:v', 'libx264', '-crf', q];
+  const subTitleExist = fs.existsSync(cleanSubName) && !args['re-encode'];
+  const subTitleName = ['-i', cleanSubName];
   const subTitleMeta = ['-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng'];
   // prettier-ignore
   const videoCuts = [
     '-vf', `select='${keeps.join('+')}', setpts=N/FRAME_RATE/TB`,
-    '-af', `aselect='${keeps.join('+')}', asetpts=N/SAMPLE_RATE/TB`, 
+    '-af', `aselect='${keeps.join('+')}', asetpts=N/SAMPLE_RATE/TB`,
   ]
   // prettier-ignore
   const filterGraphArgs = [
@@ -147,14 +157,15 @@ async function filterGraphAndEncode(state, keeps = []) {
     args.report ? '-report': '', // turn on ffmpeg logging.
     '-hide_banner',
     '-v', 'error', '-stats',
-    ...(isGPU ? gpu : ''),
+    ...(isGPU && !args['10-bit'] ? gpu : ''),
     '-i', sanitizedVideoName,
-    ...(subTitleExist ? subNameArr : ''),
-    ...(!transcribeVideo || !args['re-encode'] ? videoCuts :''),
+    ...(subTitleExist ? subTitleName : ''),
+    ...(!transcribeVideo && !args['re-encode'] ? videoCuts : ''),
     ...(isGPU ? gpuEncoder : cpuEncoder),
-    '-c:a', 'aac',
+    '-c:a', 'ac3',
+    '-b:a', '160k',
     ...(subTitleExist ? subTitleMeta : ''),
-    cleanVideoName
+    args['re-encode'] ? sanitizedReEncodeName : cleanVideoName
   ]
 
   const stdout = await spawnShell(
@@ -164,7 +175,7 @@ async function filterGraphAndEncode(state, keeps = []) {
   );
   ws.write(`filterGraphAndEncode:\nstdout: ${stdout}\n\n`);
   // log clean video metadata.
-  await getVideoMetadata(cleanVideoName, ws);
+  await getVideoMetadata(args['re-encode'] ? sanitizedReEncodeName : cleanVideoName, ws);
   return;
 }
 
@@ -355,7 +366,7 @@ function getVideoNames() {
   const vidext = ['\\.mp4$', '\\.mkv$', '\\.avi$', '\\.webm$'];
   const extRegex = new RegExp(vidext.join('|'));
   // filter out videos made from the program.
-  const avoidVideos = ['output', 'clean', 'temp', 'sanitize'];
+  const avoidVideos = ['output', 'clean', 'temp', 'sanitize', 're-encode'];
   // create video list, filtering videos.
   const avoidRegex = new RegExp(avoidVideos.map((a) => vidext.map((v) => `${a}${v}`).join('|')).join('|'));
   // console.log('regex', avoidRegex);
