@@ -1,15 +1,16 @@
 (async function () {
   const fs = require('fs');
   const {
+    convertMsToTime,
     deleteFiles,
     extractSubtitle,
     filterGraphAndEncode,
     getArgs,
     getCuts,
     getName,
-    getVideoMetadata,
+    getMetadata,
     getVideoNames,
-    sanitizeVideo,
+    recordMetadata,
     transcribeVideo,
   } = require('./utils');
 
@@ -17,88 +18,94 @@
   const videos = getVideoNames();
 
   for (const video of videos) {
+    const start = new Date().getTime();
     console.log(video);
     const { name, ext } = getName(video);
     const logName = `${name}.log`;
     const ws = fs.createWriteStream(logName);
-    ws.write(`getArgs:\nprocess.argv: ${JSON.stringify(process.argv)}\nargs: ${JSON.stringify(args)}\n\n`);
-    ws.write(`getVideoNames:\n${videos.join('\n')}\n\n`);
+    try {
+      // log args.
+      ws.write(`Video Names ------------------------------------\n${videos.join('\n')}\n\n`);
+      const videoMeta = await getMetadata(video, args, ws);
 
-    const state = {
-      args,
-      video,
-      name,
-      ext,
-      logName,
-      subName: `${name}.srt`,
-      sanitizedVideoName: `${name}-sanitize.mp4`,
-      sanitizedReEncodeName: `${name}-re-encode.mp4`,
-      outputVideoName: `${name}-output.${ext}`,
-      cleanSubName: `${name}-clean.srt`,
-      cleanVideoName: `${name}-clean.mp4`,
-      transcribeVideo: false,
-      ws,
-    };
-    // console.log(state);
+      const state = {
+        args,
+        cleanSubName: `${name}-clean.srt`,
+        cleanVideoName: `${name}-clean.mp4`,
+        ext,
+        name,
+        logName,
+        subName: `${name}.srt`,
+        transcribeVideo: false,
+        video,
+        videoMeta,
+      };
+      // console.log(state);
+      ws.write(`State -------------------------------------------\n${JSON.stringify(state, null, 2)}\n\n`);
 
-    // log original video metadata.
-    await getVideoMetadata(state.video, ws);
+      // log original video metadata.
+      await recordMetadata(state.video, ws);
 
-    // check for srt file. if not found, try to extract it.
-    if (!fs.existsSync(state.subName)) {
-      const subExist = await extractSubtitle(state);
-      // if no subtitle found, use AI to transcribe video.
-      if (!subExist) {
-        // returns string only if no swear words.
-        state.transcribeVideo = true;
-        // creates video with '-output' in name.
-        const out = await transcribeVideo(state);
-        console.log('out', out);
+      // check for subtitle file. if not found, try to extract it.
+      if (!fs.existsSync(state.subName)) {
+        const subExist = await extractSubtitle(state, ws);
+        // if no subtitle found, use AI to transcribe video.
+        if (!subExist) {
+          state.args.skip = true;
+          // returns string only if no swear words.
+          // creates video with '-output' in name.
+          const out = await transcribeVideo(state, ws);
+          console.log('out', out);
 
-        // check if there are swear words.
-        if (/No swear words found/.test(out?.stdout || '')) {
-          console.log('\x1b[35m', 'Transcription done! No swear words found.');
-          console.log('\x1b[0m', '');
-          ws.write('Transcription done! No swear words found.\n\n');
+          // check if there are swear words.
+          if (/No swear words found/.test(out?.stdout || '')) {
+            console.log('\x1b[35m', 'Transcription done! No swear words found.');
+            console.log('\x1b[0m', '');
+            ws.write('Transcription done! No swear words found.\n\n');
+            continue;
+          }
+          // The video created by 'Video-Swear-Jar' has '-output' in name.
+          state.video = `${state.name}-output.${state.ext}`;
+          // fix cut video with ffmpeg.
+          await filterGraphAndEncode(state, ws);
+          await recordMetadata(state.cleanVideoName, ws);
+          const removedFiles = [`${name}-cut.txt`, `${name}.json`, state.video, `${name}-cut-words.txt`];
+          if (!args.debug) deleteFiles(removedFiles, ws);
+          const end = new Date().getTime();
+          ws.write(`Time to Complete ${video}: ${convertMsToTime(end - start)}\n\n`);
+          ws.end();
+          // jump to next video.
           continue;
         }
-        // fix video name
-        state.video = `${state.name}-output.${state.ext}`;
-        // fix cut video with ffmpeg.
-        await filterGraphAndEncode(state);
-        const removedFiles = [`${name}-cut.txt`, `${name}.json`, state.video, `${name}-cut-words.txt`];
-        if (!args.debug) deleteFiles(removedFiles, state.ws);
-        continue;
+      } else {
+        ws.write(`Subtitle ${state.subName} found!\n\n`);
       }
-    } else {
-      ws.write(`Subtitle ${state.subName} found!\n\n`);
+
+      // Get video/audio cut times from subtitle swear words.
+      // Create cleaned subtitle with corrected timestamps.
+      const keeps = await getCuts(state, ws);
+
+      // Cut video/audio and re-encode.
+      await filterGraphAndEncode(state, ws, keeps);
+      // record specs of clean video.
+      await recordMetadata(state.cleanVideoName, ws);
+
+      // delete working files.
+      const deletes = [state.cleanSubName];
+      // remove everything but clean video.
+      if (args?.clean) deletes.push(state.video, state.subName);
+      if (args?.['clean-all']) deletes.push(state.video, state.subName, state.logName);
+      // if debug flag is passed, prevent deletion of files.
+      if (!args?.debug) deleteFiles(deletes, ws);
+      const end = new Date().getTime();
+      ws.write(`Time to Complete ${video}: ${convertMsToTime(end - start)}\n\n`);
+      ws.end();
+    } catch (err) {
+      ws.end();
+      // allow writes to finish before closing program.
+      ws.on('close', () => {
+        throw new Error(err);
+      });
     }
-
-    // remove everything but audio and video.
-    // Why? FilterGraph will keep the embedded subtitle and not add the timestamp corrected subtitle.
-    await sanitizeVideo(state);
-
-    // search subtitles for swear words. Create cleaned subtitles and cut points.
-    const keeps = await getCuts(state);
-
-    // encode video from cut points. If audio sync issues re-encode is needed.
-    // If re-encode is true, no cuts will be made on first encoding to fix bad video/audio segments.
-    await filterGraphAndEncode(state, keeps);
-    // check if video needs re-encoding?
-    if (args['re-encode']) {
-      state.sanitizedVideoName = state.sanitizedReEncodeName;
-      state.args['re-encode'] = false;
-      ws.write(`State after Re-Encode ----------------\n ${JSON.stringify(state)}\n\n`);
-      await filterGraphAndEncode(state, keeps);
-    }
-
-    // delete working files.
-    const deletes = [state.sanitizedVideoName, state.cleanSubName, state.sanitizedReEncodeName];
-    // remove everything but clean video.
-    if (args.clean) deletes.push(state.video, state.subName);
-    if (args['clean-all']) deletes.push(state.video, state.subName, state.logName);
-    // if debug flag is passed, prevent deletion of files.
-    if (!args.debug) deleteFiles(deletes, state.ws);
-    ws.end();
-  }
+  } // end for loop
 })();

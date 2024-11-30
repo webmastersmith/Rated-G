@@ -26,31 +26,31 @@
 node clean.js --clean # deletes all files and videos (including original), except clean video and log file.
 node clean.js --clean-all # deletes all files and videos (including original) except clean video.
 node clean.js --debug # verbose output. Does not delete files or videos.
-node clean.js --cpu # if you want to use your CPU instead of GPU.
 node clean.js --report # ffmpeg debugging. ffmpeg creates it's own log file.
-node clean.js --chapters # keep chapters when sanitizing video. default is remove chapters.
+node clean.js --skip # just re-encode video, do not alter content.
 
+# Video Hardware
+node clean.js --cpu # if you want to use your CPU instead of GPU.
+# 10-bit -GPU only
+node clean.js --10-bit # encodes 10 bit. Best for videos already encoded at 10 bit.
 # Quality=1-51 (best image <--> smaller file size)
 node clean.js --quality=24 # 24 default. 18-30 is best.
-
-# 10-bit -GPU only
-node clean.js --10-bit # encodes 10 bit. For videos already encoded to 10 bit. Increases encode time.
-
-# Re-Encode
-node clean.js --re-encode # bad frames create audio sync issues. re-encode video to fix bad frames.
+node clean.js --smallest # smallest size, double encoding time, keeps image quality.
+node clean.js --h264 # use older codec for older devices.
 
 # Audio
 node clean.js --bit-rate=128k # 128k default. Bit rate for audio.
-node clean.js --audio-number=0 # 0 default. Choose audio track.
+node clean.js --audio-number=0 # 0 default. First audio track.
 
-# Subtitles
-node clean.js --subtitle-number=0 # default is 0 (first subtitle). Pick the subtitle stream you want to extract.
-# view subtitles with ffprobe. Built into ffmpeg. -first subtitle is index 0.
-# ffprobe -loglevel error -select_streams s -show_entries stream=index:stream_tags=language -of csv=p=0 video.mkv
+# Metadata and Subtitles
+node clean.js --chapters # keep chapters when sanitizing video. default is remove chapters.
+node clean.js --subtitle-number=0 # 0 default. First subtitle.
+# view subtitles with ffprobe. Built into ffmpeg. First subtitle is index 0.
+  # ffprobe -loglevel error -select_streams s -show_entries stream=index:stream_tags=language -of csv=p=0 video.mkv
 
 
 # Example
-node clean.js --10-bit --quality=24 --bit-rate=192k
+node clean.js --10-bit --quality=24 --audio-number=1
 ```
 
 ## Subtitles
