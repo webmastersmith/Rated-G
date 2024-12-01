@@ -39,6 +39,7 @@ node clean.js --10-bit # encodes 10 bit. Best for videos already encoded at 10 b
 node clean.js --quality=24 # 24 default. 18-30 is best.
 node clean.js --smallest # slightly smaller file size with same image quality but doubles encoding time.
 node clean.js --h264 # use older codec for older devices.
+node clean.js --video-filter # different type of ffmpeg editing method. If more than 30 cuts, can have audio/video sync issues.
 
 # Audio
 node clean.js --bit-rate=128k # 128k default. Bit rate for audio.

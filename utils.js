@@ -208,6 +208,14 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
       '-map', '[outv]', '-map', '[outa]',
     ];
   }
+  if (args?.['video-filter']) {
+    const betweens = keeps.map(([s, e]) => `between(t,${s},${e})`);
+    // prettier-ignore
+    filterComplex =[
+      '-vf', `select='${betweens.join('+')}', setpts=N/FRAME_RATE/TB`,
+      '-af', `aselect='${betweens.join('+')}', asetpts=N/SAMPLE_RATE/TB`,
+    ]
+  }
 
   // prettier-ignore
   const filterGraphArgs = [
@@ -222,9 +230,10 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
     ...(subTitleExist ? subTitleMeta : ''),
     ...audio,
     ...sanitize,
-    ...newMetadata,
     ...filterComplex,
-    ...(subTitleExist ? ['-map', '1:s:0'] : ''),
+    ...newMetadata,
+    // ...filterComplex,
+    ...(subTitleExist && !args?.['video-filter'] ? ['-map', '1:s:0'] : ''),
     cleanVideoName
   ]
 
