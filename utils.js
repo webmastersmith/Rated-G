@@ -208,6 +208,7 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
       '-map', '[outv]', '-map', '[outa]',
     ];
   }
+  // video-filter. Cuts ~30 or more can cause sync issues.
   if (args?.['video-filter']) {
     const betweens = keeps.map(([s, e]) => `between(t,${s},${e})`);
     // prettier-ignore

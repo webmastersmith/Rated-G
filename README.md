@@ -82,3 +82,9 @@ node clean.js --10-bit --quality=24 --audio-number=1
 
 - Once the video is cut, the timeline is broken. This can cause the audio and video to be out of sync during playback. Encoding fixes this.
 - GPU encoding is faster than CPU encoding. The script is already setup for encoding with a Nvidia GPU. If you get errors, find the codec that works for your pc hardware and fix the arguments in the **filterGraphAndEncode** function.
+
+## Troubleshooting
+
+- **Partial Video Output**: downloaded video can have corrupted frames, yet still play. Re-encode video then re-run _clean.js_.
+  - (e.g. `ffmpeg -y -hwaccel cuda -i <video> -c:v h264_nvenc -c:a aac -b:a 384k -ar 48000 <out-video>`)
+- **Subtitle Error**: downloaded subtitles can have a corrupted 'head' section, that FFmpeg will not be able to open. Copy file contents into new file.
