@@ -133,10 +133,6 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
   if (Number.isNaN(q)) q = 24;
   const audioNumber = args?.['audio-number'] ? args['audio-number'] : 0;
   // prettier-ignore
-  const gpu = [
-    '-vsync', 0, // avoid edge case problems.
-    '-hwaccel', 'cuda',
-  ];
   const eightBit = [
     '-pix_fmt',
     'yuv420p',
@@ -172,7 +168,6 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
   const cpuEncoder = ['-c:v', 'libx264', '-crf', q];
   // prettier-ignore
   const audio = [
-    // Keep audio same -just fix timestamps.
     '-c:a', videoMeta.audioCodec,
     '-b:a', videoMeta.audioBitRate,
     '-ar', videoMeta.audioSampleRate,
@@ -180,7 +175,7 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
   // prettier-ignore
   const sanitize = [  
       '-map_metadata', '-1', // remove existing metadata.
-      ...(!args?.['chapters'] ? ['-map_chapters', '-1'] : '') // remove chapter metadata.
+      ...(args?.['no-chapters'] ? ['-map_chapters', '-1'] : '') // remove chapter metadata.
   ]
   // prettier-ignore
   const newMetadata = [  
@@ -205,11 +200,12 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
       // count pairs.
       pairCount++;
     }
+    // replace filter_complex with cuts.
     // prettier-ignore
     filterComplex = [
-      '-filter_complex', 
+      '-filter_complex',
       `${cuts}${pairs} concat=n=${pairCount}:v=1:a=1[outv][outa]`,
-      '-map', '[outv]', '-map', '[outa]', 
+      '-map', '[outv]', '-map', '[outa]',
     ];
   }
 
@@ -219,10 +215,10 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
     args?.report ? '-report': '', // turn on ffmpeg logging.
     '-hide_banner',
     '-v', 'error', '-stats',
-    ...(isGPU ? gpu : ''), // before input video
+    ...(isGPU ? ['-hwaccel', 'cuda'] : ''), // before input video
     '-i', video,
     ...(subTitleExist ? ['-i', cleanSubName] : ''),
-    ...(isGPU ? gpuEncoder : cpuEncoder), // after input video
+    ...(isGPU ? gpuEncoder : cpuEncoder), // after input video and subtitle
     ...(subTitleExist ? subTitleMeta : ''),
     ...audio,
     ...sanitize,

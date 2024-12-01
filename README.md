@@ -7,6 +7,8 @@
 
 - [Nodejs](https://nodejs.org/en/download/package-manager) installed.
 - [ffmpeg](https://www.ffmpeg.org/download.html) installed.
+  - [ffmpeg windows build](https://www.gyan.dev/ffmpeg/builds/)
+  - [ffmpeg Nvidia Linux build](https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/ffmpeg-with-nvidia-gpu/index.html#compiling-for-linux)
 - It is better to find subtitles, they are more accurate. If you want to use the Video Swear Jar Docker Image, [Docker](https://docs.docker.com/engine/install/) must be installed.
 - If you want FFmpeg to user your GPU, you must download **your GPU Video codec package**.
   - e.g. **NVIDIA GeForce 1050Ti** codec package: [CUDA Toolkit 12.6](https://developer.nvidia.com/cuda-downloads)
@@ -15,7 +17,7 @@
 ## Simple Start
 
 - clone repo: `git clone git@github.com:webmastersmith/Rated-G.git`
-- copy videos and subtitles into the **Rated-G directory**.
+- copy your videos and subtitles into the **Rated-G directory**.
   - subtitles must have the same name as the video, with an `.srt` extension.
   - (e.g. `video1.mp4`, `video1.srt`)
 - run from command line in same directory: `node clean.js`
@@ -35,7 +37,7 @@ node clean.js --cpu # if you want to use your CPU instead of GPU.
 node clean.js --10-bit # encodes 10 bit. Best for videos already encoded at 10 bit.
 # Quality=1-51 (best image <--> smaller file size)
 node clean.js --quality=24 # 24 default. 18-30 is best.
-node clean.js --smallest # smallest size, double encoding time, keeps image quality.
+node clean.js --smallest # slightly smaller file size with same image quality but doubles encoding time.
 node clean.js --h264 # use older codec for older devices.
 
 # Audio
@@ -43,7 +45,7 @@ node clean.js --bit-rate=128k # 128k default. Bit rate for audio.
 node clean.js --audio-number=0 # 0 default. First audio track.
 
 # Metadata and Subtitles
-node clean.js --chapters # keep chapters when sanitizing video. default is remove chapters.
+node clean.js --no-chapters # remove chapters. default is keep chapters.
 node clean.js --subtitle-number=0 # 0 default. First subtitle.
 # view subtitles with ffprobe. Built into ffmpeg. First subtitle is index 0.
   # ffprobe -loglevel error -select_streams s -show_entries stream=index:stream_tags=language -of csv=p=0 video.mkv
