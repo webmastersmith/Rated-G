@@ -1,7 +1,7 @@
 # Rated-G
 
 - Simple script that removes undesirable video and audio. Swear words are removed from the subtitles. Inspired by [Video Swear Jar](https://github.com/jveldboom/video-swear-jar).
-- Subtitles are more accurate than AI transcribing.
+- Subtitles are faster and can be more accurate than AI transcribing.
 
 ## Dependencies
 
@@ -27,7 +27,7 @@
 ```sh
 node clean.js --clean # deletes all files and videos (including original), except clean video and log file.
 node clean.js --clean-all # deletes all files and videos (including original) except clean video.
-node clean.js --debug # verbose output. Does not delete files or videos.
+node clean.js --debug # Do not delete files or videos.
 node clean.js --report # ffmpeg debugging. ffmpeg creates it's own log file.
 node clean.js --skip # just re-encode video, do not alter content.
 
