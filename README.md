@@ -33,16 +33,16 @@ node clean.js --skip # just re-encode video, do not alter content.
 
 # Video Hardware
 node clean.js --cpu # if you want to use your CPU instead of GPU.
+# Quality=1-51 (best image <--> smaller file size)
+node clean.js --quality=26 # 26 default. 18-30 is best. 26 produces video similar in size as original.
+node clean.js --smallest # slightly smaller file size with same image quality but increases encoding time.
+node clean.js --h264 # use older codec for older devices.
+node clean.js --video-filter # different type of ffmpeg editing method. If more than 20 cuts, can have audio/video sync issues.
 # 10-bit -GPU only
 node clean.js --10-bit # encodes 10 bit. Best for videos already encoded at 10 bit.
-# Quality=1-51 (best image <--> smaller file size)
-node clean.js --quality=24 # 24 default. 18-30 is best.
-node clean.js --smallest # slightly smaller file size with same image quality but doubles encoding time.
-node clean.js --h264 # use older codec for older devices.
-node clean.js --video-filter # different type of ffmpeg editing method. If more than 30 cuts, can have audio/video sync issues.
 
 # Audio
-node clean.js --bit-rate=128k # 128k default. Bit rate for audio.
+node clean.js --bit-rate=128k # 128k default. Set custom bit rate for audio.
 node clean.js --audio-number=0 # 0 default. First audio track.
 
 # Metadata and Subtitles

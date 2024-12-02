@@ -128,9 +128,9 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
   const { args, name, cleanSubName, cleanVideoName, video, videoMeta } = state;
 
   const isGPU = !args?.cpu;
-  let q = args?.quality ? +args.quality : 24;
+  let q = args?.quality ? +args.quality : 26;
   // check if quality is a number.
-  if (Number.isNaN(q)) q = 24;
+  if (Number.isNaN(q)) q = 26;
   const audioNumber = args?.['audio-number'] ? args['audio-number'] : 0;
   // prettier-ignore
   const eightBit = [
