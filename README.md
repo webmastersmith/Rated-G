@@ -16,7 +16,7 @@
 
 ## Simple Start
 
-1. **[Click here to download latest version](https://github.com/webmastersmith/Rated-G/archive/refs/heads/main.zip)**
+1. **[Click here to download latest version](https://raw.githubusercontent.com/webmastersmith/Rated-G/refs/heads/main/clean.js)**
 2. copy your videos and subtitles into the **Rated-G directory**.
    1. subtitles must have the same name as the video, with an `.srt` extension.
    2. (e.g. `video1.mp4`, `video1.srt`)
