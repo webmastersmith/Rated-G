@@ -257,7 +257,7 @@ async function recordMetadata(name, ws) {
     '-of','json',
     name,
   ];
-  const specs = await spawnShell('ffprobe', options, ws);
+  const specs = await spawnShell('ffprobe', options, ws, false);
   ws.write(`Video ${name} Specifications ----------------------------------\n${specs}\n\n`);
   return;
 }
@@ -271,7 +271,7 @@ async function getMetadata(name, args, ws) {
     '-of','json',
     name,
   ];
-  const specs = await spawnShell('ffprobe', options, ws);
+  const specs = await spawnShell('ffprobe', options, ws, false);
   // separate video/audio
   const meta = JSON.parse(specs);
   const audioNumber = args?.['audio-number'] ? +args['audio-number'] + 1 : 1;
@@ -481,7 +481,7 @@ async function getVideoDuration(name, ext, ws) {
     '-select_streams', 'v:0',
     `${name}.${ext}`
   ]
-  let duration = await spawnShell('ffprobe', durationArgs, ws);
+  let duration = await spawnShell('ffprobe', durationArgs, ws, false);
   duration = +duration.trim();
   ws.write(`Video Length: Sec.Milli: ${duration}, Time: ${secondsToTime(duration)}\n\n`);
   return duration;
@@ -551,14 +551,14 @@ function secondsToTime(time) {
  * @param {array} spawnArgs array of arguments. -No spaces. Must be comma separated.
  * @returns string, stdout
  */
-async function spawnShell(command, spawnArgs = [], ws) {
+async function spawnShell(command, spawnArgs = [], ws, view = true) {
   const { spawn } = require('child_process');
   return new Promise((resolve, reject) => {
     let stdout = '';
     try {
       const msg = `Running command: ${command} ${spawnArgs.join(' ')}\n\n`;
       ws.write(msg);
-      console.log(msg);
+      if (view) console.log(msg);
       const process = spawn(command, spawnArgs);
       process.stdout.on('data', (data) => {
         console.log(data.toString());
