@@ -9,14 +9,14 @@
 - [ffmpeg](https://www.ffmpeg.org/download.html) installed.
   - [ffmpeg windows build](https://www.gyan.dev/ffmpeg/builds/)
   - [ffmpeg Nvidia Linux build](https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/ffmpeg-with-nvidia-gpu/index.html#compiling-for-linux)
-- It is better to find subtitles, they are more accurate. If you want to use the Video Swear Jar Docker Image, [Docker](https://docs.docker.com/engine/install/) must be installed.
-- If you want FFmpeg to user your GPU, you must download **your GPU Video codec package**.
+- To 'clean' video, subtitles are a great option. If you want to use the _Video Swear Jar_ Docker Image to transcribe the audio, [Docker](https://docs.docker.com/engine/install/) must be installed.
+- For FFmpeg to user your GPU, you must download **your GPU Video codec package** and compile FFmpeg with GPU drivers.
   - e.g. **NVIDIA GeForce 1050Ti** codec package: [CUDA Toolkit 12.6](https://developer.nvidia.com/cuda-downloads)
   - Get the toolkit for **your GPU**, or use the `-cpu` flag to only use the CPU.
 
 ## Simple Start
 
-1. Copy [clean.js](https://raw.githubusercontent.com/webmastersmith/Rated-G/refs/heads/main/clean.js) in directory with **video** and **subtitle**. (no subtitle, _Docker_ must be installed for '_Video Swear Jar_' to run).
+1. Copy [clean.js](https://raw.githubusercontent.com/webmastersmith/Rated-G/refs/heads/main/clean.js) in the directory with **video** and **subtitle**. (If you do not have subtitle file, '_Video Swear Jar_' Docker image will be called to transcribe audio. _Docker_ must be installed).
    1. subtitles must have the same name as the video, with an `.srt` extension.
    2. (e.g. `video1.mp4`, `video1.srt`)
 2. run from command line in same directory: `node clean.js --cpu`
