@@ -187,7 +187,7 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
 
   // Filter_Complex
   let filterComplex = ['-map', '0:v', '-map', `0:a:${audioNumber}`];
-  // only build if needed.
+  // create cuts if args.skip is false.
   if (!args?.skip) {
     // Build the cuts.
     let cuts = '';
@@ -207,15 +207,15 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
       `${cuts}${pairs} concat=n=${pairCount}:v=1:a=1[outv][outa]`,
       '-map', '[outv]', '-map', '[outa]',
     ];
-  }
-  // video-filter. Cuts ~30 or more can cause sync issues.
-  if (args?.['video-filter']) {
-    const betweens = keeps.map(([s, e]) => `between(t,${s},${e})`);
-    // prettier-ignore
-    filterComplex =[
-      '-vf', `select='${betweens.join('+')}', setpts=N/FRAME_RATE/TB`,
-      '-af', `aselect='${betweens.join('+')}', asetpts=N/SAMPLE_RATE/TB`,
-    ]
+    // video-filter. Cuts ~30 or more can cause sync issues.
+    if (args?.['video-filter']) {
+      const betweens = keeps.map(([s, e]) => `between(t,${s},${e})`);
+      // prettier-ignore
+      filterComplex =[
+        '-vf', `select='${betweens.join('+')}', setpts=N/FRAME_RATE/TB`,
+        '-af', `aselect='${betweens.join('+')}', asetpts=N/SAMPLE_RATE/TB`,
+      ]
+    }
   }
 
   // prettier-ignore
@@ -242,7 +242,7 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
     filterGraphArgs.filter((a) => a !== ''),
     ws
   );
-  ws.write(`filterGraphAndEncode:\nstdout: ${stdout}\n\n`);
+  ws.write(`filterGraphAndEncode: --------------------------------------------------\n${stdout}\n\n`);
   // log clean video metadata.
   await getVideoMetadata(cleanVideoName, ws);
   return;
