@@ -1,0 +1,20 @@
+{
+  "name": "rated-g",
+  "version": "1.0.0",
+  "description": "- Simple script that removes undesirable video and audio. Swear words are removed from the subtitles. Inspired by [Video Swear Jar](https://github.com/jveldboom/video-swear-jar). - Subtitles are more accurate than AI transcribing.",
+  "main": "clean.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack --mode production --config webpack.config.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "browserify": "^17.0.1",
+    "uglify-js": "^3.19.3",
+    "vite": "^6.0.1",
+    "webpack": "^5.96.1",
+    "webpack-cli": "^5.1.4"
+  }
+}
