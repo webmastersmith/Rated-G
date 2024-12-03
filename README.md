@@ -10,15 +10,14 @@
   - [ffmpeg windows build](https://www.gyan.dev/ffmpeg/builds/)
   - [ffmpeg Nvidia Linux build](https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/ffmpeg-with-nvidia-gpu/index.html#compiling-for-linux)
 - To 'clean' video, subtitles are a great option. If you want to use the _Video Swear Jar_ Docker Image to transcribe the audio, [Docker](https://docs.docker.com/engine/install/) must be installed.
-- For FFmpeg to user your GPU, you must download **your GPU Video codec package** and compile FFmpeg with GPU drivers.
+- For FFmpeg to user your GPU, you must download **your GPU Video codec package** and compile FFmpeg with GPU options enabled.
   - e.g. **NVIDIA GeForce 1050Ti** codec package: [CUDA Toolkit 12.6](https://developer.nvidia.com/cuda-downloads)
-  - Get the toolkit for **your GPU**, or use the `-cpu` flag to only use the CPU.
+  - Get the toolkit for **your GPU**, or use the `--cpu` flag to only use the CPU.
 
 ## Simple Start
 
-1. Copy [clean.js](https://raw.githubusercontent.com/webmastersmith/Rated-G/refs/heads/main/clean.js) in the directory with **video** and **subtitle**. (If you do not have subtitle file, '_Video Swear Jar_' Docker image will be called to transcribe audio. _Docker_ must be installed).
-   1. subtitles must have the same name as the video, with an `.srt` extension.
-   2. (e.g. `video1.mp4`, `video1.srt`)
+1. Copy [clean.js](https://raw.githubusercontent.com/webmastersmith/Rated-G/refs/heads/main/clean.js) in the directory with **video** and **subtitle**. (If you do not have subtitle file, _Video Swear Jar_ Docker image will be called to transcribe audio. [Docker](https://docs.docker.com/engine/install/) must be installed).
+   1. subtitles must have the same name as the video, with an `.srt` extension. (e.g. `video1.mp4`, `video1.srt`).
 2. run from command line in same directory: `node clean.js --cpu`
 
 ## Flags
@@ -31,14 +30,15 @@ node clean.js --report # ffmpeg debugging. ffmpeg creates it's own log file.
 node clean.js --skip # just re-encode video, do not alter content.
 
 # Video Hardware
-node clean.js --cpu # if you want to use your CPU instead of GPU.
 # Quality=1-51 (best image <--> smaller file size)
-node clean.js --quality=26 # 26 default. 18-30 is best. 26 produces video similar in size as original.
-node clean.js --smallest # slightly smaller file size with same image quality but increases encoding time.
-node clean.js --h264 # use older codec for older devices.
-node clean.js --video-filter # different type of ffmpeg editing method. If more than 20 cuts, can have audio/video sync issues.
-# 10-bit -GPU only
-node clean.js --10-bit # encodes 10 bit. Best for videos already encoded at 10 bit.
+node clean.js --quality=26 # CPU & GPU. 26 default. 18-30 is best. 26 produces video similar in size as original.
+# CPU
+node clean.js --cpu # default GPU. Use your CPU instead of GPU to encode video.
+node clean.js --cpu --h265 # CPU only. Default CPU encoding uses the h264 codec.
+# GPU
+node clean.js --smallest # GPU only. Smaller file size while keeping image quality, but increases encoding time.
+node clean.js --h264 # GPU only. H265 default. Use older codec for older devices.
+node clean.js --10-bit # GPU only. Best for videos already encoded at 10 bit.
 
 # Audio
 node clean.js --bit-rate=128k # 128k default. Set custom bit rate for audio.
@@ -50,9 +50,8 @@ node clean.js --subtitle-number=0 # 0 default. First subtitle.
 # view subtitles with ffprobe. Built into ffmpeg. First subtitle is index 0.
   # ffprobe -loglevel error -select_streams s -show_entries stream=index:stream_tags=language -of csv=p=0 video.mkv
 
-
 # Example
-node clean.js --10-bit --quality=24 --audio-number=1
+node clean.js --cpu --h265 --quality=28 --audio-number=1 --subtitle-number=1
 ```
 
 ## Subtitles

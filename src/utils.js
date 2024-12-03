@@ -165,7 +165,7 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
     '-qdiff', 20,
     '-qcomp', 0.9,
   ];
-  const cpuEncoder = ['-c:v', 'libx264', '-crf', q];
+  const cpuEncoder = ['-c:v', args?.h265 ? 'libx265' : 'libx264', '-crf', q];
   // prettier-ignore
   const audio = [
     '-c:a', videoMeta.audioCodec,
