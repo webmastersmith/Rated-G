@@ -84,5 +84,5 @@ node clean.js --cpu --h265 --quality=28 --audio-number=1 --subtitle-number=1
 ## Troubleshooting
 
 - **Partial Video Output**: downloaded video can have corrupted frames, yet still play. Re-encode video then re-run _clean.js_.
-  - (e.g. `ffmpeg -y -hwaccel cuda -i <video> -c:v h264_nvenc -c:a aac -b:a 384k -ar 48000 <out-video>`)
+  - (e.g. `ffmpeg -y -i <video> -c:v libx264 -c:a aac -b:a 384k -ar 48000 <out-video>`)
 - **Subtitle Error**: downloaded subtitles can have a corrupted 'head' section, that FFmpeg will not be able to open. Copy file contents into new file.

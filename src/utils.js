@@ -293,7 +293,7 @@ async function getMetadata(name, args, ws) {
   // Sample Rate
   let audioSampleRate = +audio?.['sample_rate'];
   // Bit Rate
-  let audioBitRate = +audio?.['bit_rate'];
+  let audioBitRate = args?.['bit-rate'] ? args['bit-rate'] : +audio?.['bit_rate'];
   // Codec Name
   let audioCodec = audio?.['codec_name'];
   // If audio not listed. use default.
@@ -302,7 +302,7 @@ async function getMetadata(name, args, ws) {
       `Audio Codec Problem. Using defaults. -----------------------\nAudio Sample Rate: ${audioSampleRate}\nAudio Bit Rate: ${audioBitRate}\nAudio Codec: ${audioCodec}\n\n`
     );
     audioBitRate = 48000;
-    audioBitRate = '448k';
+    audioBitRate = args?.['bit-rate'] ? args['bit-rate'] : '448k';
     audioCodec = 'ac3';
   }
 
