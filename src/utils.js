@@ -540,14 +540,14 @@ async function spawnShell(command, spawnArgs = [], ws, view = true) {
     try {
       const msg = `Running command: ${command} ${spawnArgs.join(' ')}\n\n`;
       ws.write(msg);
-      if (view) console.log(msg);
+      console.log(msg);
       const process = spawn(command, spawnArgs);
       process.stdout.on('data', (data) => {
-        console.log(data.toString());
+        if (view) console.log(data.toString());
         stdout += data;
       });
       process.stderr.on('data', (data) => {
-        console.log(data.toString());
+        if (view) console.log(data.toString());
         stdout += data;
       });
       process.on('close', (code) => {
