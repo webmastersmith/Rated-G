@@ -19,7 +19,7 @@
 1. Copy [clean.js](https://raw.githubusercontent.com/webmastersmith/Rated-G/refs/heads/main/clean.js) in directory with **video** and **subtitle**. (no subtitle, _Docker_ must be installed for '_Video Swear Jar_' to run).
    1. subtitles must have the same name as the video, with an `.srt` extension.
    2. (e.g. `video1.mp4`, `video1.srt`)
-2. run from command line in same directory: `node clean.js`
+2. run from command line in same directory: `node clean.js --cpu`
 
 ## Flags
 

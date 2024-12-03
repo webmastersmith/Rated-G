@@ -275,8 +275,6 @@ async function getMetadata(name, args, ws) {
   // separate video/audio
   const meta = JSON.parse(specs);
   const audioNumber = args?.['audio-number'] ? +args['audio-number'] + 1 : 1;
-  console.log(audioNumber);
-
   const video = meta?.streams[0];
   const audio = meta?.streams[audioNumber];
 
@@ -499,7 +497,6 @@ function getVideoNames() {
   const avoidVideos = ['output', 'clean', 'temp', 'sanitize'];
   // create video list, filtering videos.
   const avoidRegex = new RegExp(avoidVideos.map((a) => vidext.map((v) => `${a}${v}`).join('|')).join('|'));
-  // console.log('regex', avoidRegex);
   const videos = fs
     .readdirSync(process.cwd())
     .filter((file) => extRegex.test(file))
@@ -585,7 +582,6 @@ function splitSubtitles(subTitleName, ws) {
   const srt = fs.readFileSync(subTitleName, 'utf-8');
   // read srt, split into blocks. -convert to object.
   const subtitles = srt.split(/\r?\n\r?\n\d{1,5}\r?\n?$/m).map((block, idx) => {
-    // console.log('block', block);
     let rawTime = '';
     let text = '';
     // first line will keep id
