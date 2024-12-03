@@ -16,11 +16,11 @@
 
 ## Simple Start
 
-- **[Click here to download latest version](https://github.com/webmastersmith/Rated-G/archive/refs/heads/main.zip)**
-- copy your videos and subtitles into the **Rated-G directory**.
-  - subtitles must have the same name as the video, with an `.srt` extension.
-  - (e.g. `video1.mp4`, `video1.srt`)
-- run from command line in same directory: `node clean.js`
+1. **[Click here to download latest version](https://github.com/webmastersmith/Rated-G/archive/refs/heads/main.zip)**
+2. copy your videos and subtitles into the **Rated-G directory**.
+   a. subtitles must have the same name as the video, with an `.srt` extension.
+   b. (e.g. `video1.mp4`, `video1.srt`)
+3. run from command line in same directory: `node clean.js`
 
 ## Flags
 
