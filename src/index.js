@@ -75,7 +75,6 @@
             state.video = `${state.name}-output.${state.ext}`;
             // The 'output' video will be cut and missing timestamps. Re-encode to fix.
             await filterGraphAndEncode(state, ws);
-            await recordMetadata(state.cleanVideoName, ws);
             const removedFiles = [`${name}-cut.txt`, `${name}.json`, state.video, `${name}-cut-words.txt`];
             if (!args.debug) deleteFiles(removedFiles, ws);
             const end = new Date().getTime();
@@ -94,8 +93,6 @@
 
       // Cut video/audio and re-encode.
       await filterGraphAndEncode(state, ws, keeps);
-      // record specs of clean video.
-      await recordMetadata(state.cleanVideoName, ws);
 
       // delete working files.
       const deletes = [state.cleanSubName];

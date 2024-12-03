@@ -243,8 +243,8 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
     ws
   );
   ws.write(`filterGraphAndEncode: --------------------------------------------------\n${stdout}\n\n`);
-  // log clean video metadata.
-  await getVideoMetadata(cleanVideoName, ws);
+  // record specs of clean video.
+  await recordMetadata(state.cleanVideoName, ws);
   return;
 }
 
@@ -488,24 +488,6 @@ async function getVideoDuration(name, ext, ws) {
 }
 
 /**
- * FFprobe to get the Video metadata. Record to log file.
- * @param {string} video name of video
- * @param {object} ws writeStream
- * @returns undefined
- */
-async function getVideoMetadata(video, ws) {
-  try {
-    const metadataArgs = ['-hide_banner', '-i', video];
-    const stdout = await spawnShell('ffprobe', metadataArgs, ws);
-    ws.write(`${video} Metadata\n${stdout}\n\n`);
-    return;
-  } catch (error) {
-    ws.write(`getVideoMetadata Error: ${error}\n\n`);
-    throw new Error(error);
-  }
-}
-
-/**
  * Filter list of files for video type, and remove temporary videos from list.
  * @returns string[]: List of video names.
  */
@@ -682,7 +664,6 @@ module.exports = {
   getName,
   getMetadata,
   getVideoDuration,
-  getVideoMetadata,
   getVideoNames,
   recordMetadata,
   spawnShell,
