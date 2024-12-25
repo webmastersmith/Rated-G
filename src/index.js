@@ -46,7 +46,7 @@
       // log original video metadata.
       await recordMetadata(state.video, ws);
 
-      // only call 'video swear jar' if skip flag is false
+      // only re-encode video if skip flag is true.
       if (!args?.skip) {
         // check for subtitle file.
         if (fs.existsSync(state.subName)) {
@@ -83,7 +83,7 @@
             // jump to next video.
             continue;
           }
-        }
+        } // end srt found!
       }
 
       // Get video/audio cut times from subtitle swear words.
