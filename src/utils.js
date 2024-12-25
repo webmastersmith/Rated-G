@@ -579,34 +579,50 @@ async function spawnShell(command, spawnArgs = [], ws, view = true) {
  * @returns string[] each timestamp separated into sections.
  */
 function splitSubtitles(subTitleName, ws) {
-  const srt = fs.readFileSync(subTitleName, 'utf-8');
-  // read srt, split into blocks. -convert to object.
-  const subtitles = srt.split(/\r?\n\r?\n\d{1,5}\r?\n?$/m).map((block, idx) => {
-    let rawTime = '';
-    let text = '';
-    // first line will keep id
-    if (idx > 0) {
-      [rawTime, ...text] = block.trim().split(/\r?\n/);
-    } else {
-      [_, rawTime, ...text] = block.trim().split(/\r?\n/);
-    }
-    // console.log('rawTime', rawTime, 'text', text);
-    const [start, end] = rawTime.split(' --> ');
-    return {
-      id: idx + 1,
-      start,
-      end,
-      text: text.join('\n').trim(),
-    };
-  });
+  // subtitle errors can be vague.
+  try {
+    const srt = fs.readFileSync(subTitleName, 'utf-8');
+    // read srt, split into blocks. -convert to object.
+    const subtitles = srt.split(/\r?\n\r?\n\d{1,5}\r?\n?$/m).map((block, idx) => {
+      let rawTime = '';
+      let text = '';
+      // first line will keep id
+      if (idx > 0) {
+        [rawTime, ...text] = block.trim().split(/\r?\n/);
+      } else {
+        [_, rawTime, ...text] = block.trim().split(/\r?\n/);
+      }
+      // console.log('rawTime', rawTime, 'text', text);
+      const [start, end] = rawTime.split(' --> ');
+      return {
+        id: idx + 1,
+        start,
+        end,
+        text: text.join('\n').trim(),
+      };
+    });
 
-  const subStr = subtitles.reduce((acc, cur) => {
-    const { id, start, end, text } = cur;
-    return (acc += `${id}\n${start} --> ${end}\n${text}\n\n`);
-  }, '');
+    const subStr = subtitles.reduce((acc, cur) => {
+      const { id, start, end, text } = cur;
+      return (acc += `${id}\n${start} --> ${end}\n${text}\n\n`);
+    }, '');
 
-  ws.write(`splitSubtitles:\n${subStr}\n\n`);
-  return subtitles;
+    ws.write(`splitSubtitles:\n${subStr}\n\n`);
+    return subtitles;
+  } catch (error) {
+    const msg = `
+\x1b[31m${subTitleName} Read Error:
+\x1b[33mThere was a problem parsing the subtitle ${subTitleName}.
+Check the first line in ${subTitleName} is a number.
+The problem could also be file header corruption:
+  Copy ${subTitleName} contents into a new file and save. 
+  Delete old srt file.
+  Rename new file as: ${subTitleName}\x1b[0m
+\n\n
+`;
+    ws.write(`${msg}`);
+    throw new Error(msg);
+  }
 }
 
 /**
