@@ -31,7 +31,8 @@ node clean.js --skip # just re-encode video, do not alter content.
 
 # Video Hardware
 # Quality=1-51 (best image <--> smaller file size)
-node clean.js --quality=26 # CPU & GPU. 26 default. 18-30 is best. 26 produces video similar in size as original.
+node clean.js --quality=27 # CPU & GPU. 27 default. 18-30 is best.
+  # Depending on original video compression, 27 produces video similar in size or smaller than original.
 # CPU
 node clean.js --cpu # default GPU. Use your CPU instead of GPU to encode video.
 node clean.js --cpu --h265 # CPU only. Default CPU encoding uses the h264 codec.
