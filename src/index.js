@@ -46,7 +46,7 @@
       // log original video metadata.
       await recordMetadata(state.video, ws);
 
-      // only re-encode video if skip flag is true.
+      // Do not alter content if skip flag is true.
       if (!args?.skip) {
         // check for subtitle file.
         if (fs.existsSync(state.subName)) {

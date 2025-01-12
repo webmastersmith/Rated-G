@@ -248,6 +248,12 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
   return;
 }
 
+/**
+ * Write video metadata to log.
+ * @param {string} name name of video
+ * @param {function} ws write logs
+ * @returns
+ */
 async function recordMetadata(name, ws) {
   // prettier-ignore
   const options = [
@@ -261,6 +267,14 @@ async function recordMetadata(name, ws) {
   ws.write(`Video ${name} Specifications ----------------------------------\n${specs}\n\n`);
   return;
 }
+
+/**
+ * Read video metadata and match specs.
+ * @param name string. video name
+ * @param args object. args passed in
+ * @param ws function. write to log
+ * @returns returns video specs object.
+ */
 async function getMetadata(name, args, ws) {
   // prettier-ignore
   const options = [
@@ -293,16 +307,16 @@ async function getMetadata(name, args, ws) {
   // Sample Rate
   let audioSampleRate = +audio?.['sample_rate'];
   // Bit Rate
-  let audioBitRate = args?.['bit-rate'] ? args['bit-rate'] : +audio?.['bit_rate'];
+  let audioBitRate = args?.['audio-bitrate'] ? args['audio-bitrate'] : +audio?.['bit_rate'];
   // Codec Name
-  let audioCodec = audio?.['codec_name'];
+  let audioCodec = args?.['audio-codec'] ? args['audio-codec'] : audio?.['codec_name'];
   // If audio not listed. use default.
   if (Number.isNaN(audioSampleRate) || Number.isNaN(audioBitRate) || !audioCodec) {
     ws.write(
       `Audio Codec Problem. Using defaults. -----------------------\nAudio Sample Rate: ${audioSampleRate}\nAudio Bit Rate: ${audioBitRate}\nAudio Codec: ${audioCodec}\n\n`
     );
-    audioBitRate = 48000;
-    audioBitRate = args?.['bit-rate'] ? args['bit-rate'] : '448k';
+    audioSampleRate = 48000;
+    audioBitRate = args?.['audio-bitrate'] ? args['audio-bitrate'] : '448k';
     audioCodec = 'ac3';
   }
 
