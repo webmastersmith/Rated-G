@@ -46,7 +46,6 @@ node clean.js --audio-bitrate=128k # 128k default. Set custom bit rate for audio
 node clean.js --audio-number=0 # 0 default. First audio track.
 node clean.js --audio-codec=aac # default: Rated-G will use audio metadata to match original codec unless you override. Options: aac, ac3 or any valid ffmpeg audio codec.
 
-
 # Metadata and Subtitles
 node clean.js --no-chapters # remove chapters. default is keep chapters.
 node clean.js --subtitle-number=0 # 0 default. First subtitle.

@@ -234,6 +234,7 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
     ...newMetadata,
     ...filterComplex,
     ...(subTitleExist && !args?.['video-filter'] ? ['-map', '1:s:0'] : ''),
+    '-strict', 'experimental',
     cleanVideoName
   ]
 
