@@ -29,8 +29,8 @@
   "puss\\w*(y|s)",
   "shit\\w*",
   "smartass",
-  "tits?",
-  "titties",
+  "^tits?$",
+  "titt\\w*",
   "twat",
   "vagina"
 ]
