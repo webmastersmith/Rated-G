@@ -395,7 +395,7 @@ async function getCuts(state, ws) {
         totalSecondsRemoved += secRemoved;
         keepStr += `Start time was zero. Seconds removed: ${secRemoved}.\t`;
       } else {
-        // ignore clips shorter than two seconds.
+        // check if clips shorter than two seconds.
         if (Math.abs(startSeconds - s) >= 2) {
           const between = `between(t,${s},${startSeconds})`;
           keeps.push([s, startSeconds]);
@@ -409,6 +409,7 @@ async function getCuts(state, ws) {
             }\n\n`
           );
         } else {
+          // ignore clips shorter than two seconds.
           const secRemoved = Math.abs(endSeconds - s);
           totalSecondsRemoved += secRemoved;
           // log
@@ -486,7 +487,7 @@ async function getVideoDuration(name, ext, ws) {
   const isMKV = ext === 'mkv';
   // prettier-ignore
   const durationArgs = [
-    '-v', 'error',
+    '-v', 'quiet',
     '-hide_banner',
     '-print_format', 'flat',
     '-show_entries',  isMKV ? 'format=duration' : 'stream=duration',
@@ -496,7 +497,13 @@ async function getVideoDuration(name, ext, ws) {
   ]
   let duration = await spawnShell('ffprobe', durationArgs, ws, false);
   duration = +duration.trim();
+  // check if duration is NaN
+  if (Number.isNaN(duration)) {
+    ws.write(`Duration was NaN: ${duration}\n\n`);
+    throw new Error(`Duration was NaN: ${duration}`);
+  }
   ws.write(`Video Length: Sec.Milli: ${duration}, Time: ${secondsToTime(duration)}\n\n`);
+
   return duration;
 }
 
