@@ -44,7 +44,9 @@ node clean.js --10-bit # GPU only. Best for videos already encoded at 10 bit.
 # Audio
 node clean.js --audio-bitrate=128k # 128k default. Set custom bit rate for audio.
 node clean.js --audio-number=0 # 0 default. First audio track.
-node clean.js --audio-codec=aac # default: Rated-G will use audio metadata to match original codec unless you override. Options: aac, ac3 or any valid ffmpeg audio codec.
+node clean.js --audio-codec=aac # default: Rated-G will use audio metadata to match original codec unless you override. Options: aac, ac3, flac, opus or any valid ffmpeg audio codec.
+# Note: Rated-G will try to use the original audio codec. Experimental mode is on.
+## Some codecs are experimental because they are not supported by some vendors, so codec may not play on your device.
 
 # Metadata and Subtitles
 node clean.js --no-chapters # remove chapters. default is keep chapters.
