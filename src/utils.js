@@ -383,10 +383,10 @@ async function getCuts(state, ws) {
   const keeps = [];
   let s = 0;
   for (const [i, sub] of subtitles.entries()) {
-    const { id, start, end, text } = sub;
+    let { id, start, end, text } = sub;
     const startSeconds = Math.floor(timeToSeconds(start));
     const endSeconds = Math.ceil(timeToSeconds(end));
-    if (containsSwearWords(text)) {
+    if (containsSwearWords(text) && !text.includes('!ignore!')) {
       // invert cuts.
       if (startSeconds === 0) {
         // jump to next endSeconds.
@@ -424,6 +424,7 @@ async function getCuts(state, ws) {
       // Fix subtitle times to align with cut movie.
       const startFix = secondsToTime(addSubtractSec('-', timeToSeconds(start), totalSecondsRemoved));
       const endFix = secondsToTime(addSubtractSec('-', timeToSeconds(end), totalSecondsRemoved));
+      if (text.includes('!ignore!')) text = text.replace('!ignore!', '');
       // push clean srt.
       newSrtArr.push({ id, start: startFix, end: endFix, text });
     }
