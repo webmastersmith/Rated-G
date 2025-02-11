@@ -24,7 +24,7 @@ function addSubtractSec(operator = '-', sec1, sec2) {
  */
 function containsSwearWords(text) {
   const pattern = swearWords.join('|');
-  const regex = new RegExp(`\\b(?:${pattern})\\b`, 'i'); // 'i' flag for case-insensitive matching
+  const regex = new RegExp(`\\b(?:${pattern})\\b`, 'iu'); // 'i' flag for case-insensitive matching 'u' for unicode.
   if (regex.test(text) || /!remove!/.test(text)) return true;
   return false;
 }
