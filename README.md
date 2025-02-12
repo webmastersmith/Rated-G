@@ -75,9 +75,15 @@ node clean.js --cpu --h265 --quality=28 --audio-number=1 --subtitle-number=1
   - `!remove!` <-- special key word.
 
 ```txt
+# Example of customer video removal timestamps.
 6
 00:00:34,000 --> 00:01:56,000
 !remove!
+
+# Example of ignoring a swearword match.
+9
+00:02:36,000 --> 00:02:39,000
+Subtitle text you want to keep. !ignore!
 ```
 
 ## FFmpeg Encoding
