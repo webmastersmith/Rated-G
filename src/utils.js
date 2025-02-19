@@ -711,6 +711,18 @@ async function transcribeVideo(state, ws) {
   ws.write(`transcribeVideo:\nstdout: ${stdout}\n\n`);
   return;
 }
+/**
+ * Docker must be running. Pulls the Video-Swear-Jar image. AI transcribes the audio to text and outputs a clean version of video.
+ * // https://github.com/jveldboom/video-swear-jar
+ * @param {string} video Video name and extension.
+ * @returns object: { stdout: string stderr: string }
+ */
+async function zipVideo(state, ws) {
+  const { video, subName, name } = state;
+  const stdout = await spawnShell('7z', ['a', '-t7z', `${name}.7z`, video, subName], ws);
+  ws.write(`zip:\nstdout: ${stdout}\n\n`);
+  return;
+}
 
 module.exports = {
   containsSwearWords,
@@ -727,4 +739,5 @@ module.exports = {
   recordMetadata,
   spawnShell,
   transcribeVideo,
+  zipVideo,
 };

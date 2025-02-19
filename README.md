@@ -28,6 +28,7 @@ node clean.js --clean-all # deletes all files and videos (including original) ex
 node clean.js --debug # Do not delete files or videos.
 node clean.js --report # ffmpeg debugging. ffmpeg creates it's own log file.
 node clean.js --skip # just re-encode video, do not alter content.
+node clean.js --zip # 7zip must be added to path. Enables the '--clean' flag as well.
 
 # Video Hardware
 # Quality=1-51 (best image <--> smaller file size)

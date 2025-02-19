@@ -12,6 +12,7 @@
     getVideoNames,
     recordMetadata,
     transcribeVideo,
+    zipVideo,
   } = require('./utils.js');
 
   const args = getArgs();
@@ -23,6 +24,7 @@
     const { name, ext } = getName(video);
     const logName = `${name}.log`;
     const ws = fs.createWriteStream(logName);
+    args?.zip ? (args.clean = true) : '';
     try {
       // log args.
       ws.write(`Video Names ------------------------------------\n${videos.join('\n')}\n\n`);
@@ -89,15 +91,17 @@
       // Get video/audio cut times from subtitle swear words.
       // Create cleaned subtitle with corrected timestamps.
       let keeps = [];
-      if (!args?.skip) keeps = await getCuts(state, ws);
+      if (!args?.skip) keeps = args.copy ? [] : await getCuts(state, ws);
 
       // Cut video/audio and re-encode.
       await filterGraphAndEncode(state, ws, keeps);
 
+      if (args?.zip) await zipVideo(state, ws);
+
       // delete working files.
       const deletes = [state.cleanSubName];
       // remove everything but clean video.
-      if (args?.clean) deletes.push(state.video, state.subName);
+      if (args?.clean) deletes.push(state.video, state.subName, 'clean.txt');
       if (args?.['clean-all']) deletes.push(state.video, state.subName, state.logName);
       // if debug flag is passed, prevent deletion of files.
       if (!args?.debug) deleteFiles(deletes, ws);
