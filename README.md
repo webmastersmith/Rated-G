@@ -49,6 +49,7 @@ node clean.js --audio-codec=aac # default: Rated-G will use audio metadata to ma
 ## Some codecs are experimental because they are not supported by some vendors, so codec may not play on your device.
 
 # Metadata and Subtitles
+node clean.js --copy # Create clone of video and embed subtitles.
 node clean.js --no-chapters # remove chapters. default is keep chapters.
 node clean.js --subtitle-number=0 # 0 default. First subtitle.
 # view subtitles with ffprobe. Built into ffmpeg. First subtitle is index 0.

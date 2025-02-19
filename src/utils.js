@@ -125,7 +125,7 @@ function fixDecimal(num) {
  * @returns Clean video name.
  */
 async function filterGraphAndEncode(state, ws, keeps = []) {
-  const { args, name, cleanSubName, cleanVideoName, video, videoMeta } = state;
+  const { args, ext, name, subName, cleanSubName, cleanVideoName, video, videoMeta } = state;
 
   const isGPU = !args?.cpu;
   let q = args?.quality ? +args.quality : 27;
@@ -180,10 +180,15 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
   // prettier-ignore
   const newMetadata = [  
       '-metadata', `creation_time=${new Date().toISOString()}`,
-      '-metadata',`title='${name}.mp4'`,
+      '-metadata',`title='${name}'`,
   ]
   const subTitleExist = fs.existsSync(cleanSubName);
-  const subTitleMeta = ['-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng'];
+  const subTitleMeta = [
+    '-c:s',
+    args?.copy && ext === 'mkv' ? 'srt' : 'mov_text',
+    '-metadata:s:s:0',
+    'language=eng',
+  ];
 
   // Filter_Complex
   let filterComplex = ['-map', '0:v', '-map', `0:a:${audioNumber}`];
@@ -238,14 +243,33 @@ async function filterGraphAndEncode(state, ws, keeps = []) {
     cleanVideoName
   ]
 
+  // prettier-ignore
+  const copyArgs = [
+      '-y',
+      args?.report ? '-report': '', // turn on ffmpeg logging.
+      '-hide_banner',
+      '-v', 'error', '-stats',
+      '-i', video,
+      ...(ext === 'mkv' ? ['-f', 'srt'] : ''), // mkv and mp4 have different codecs for writing subtitles.
+      '-i', subName,
+      ...(ext === 'mkv' ? ['-map', '0:0', '-map', '0:1', '-map', '1:0'] : ''),
+      '-c:v', 'copy', '-c:a', 'copy',
+      ...sanitize,
+      ...newMetadata,
+      ...subTitleMeta,
+      `${name}-withSubtitle.${ext}`
+    ]
   const stdout = await spawnShell(
     'ffmpeg',
-    filterGraphArgs.filter((a) => a !== ''),
+    args?.copy ? copyArgs.filter((a) => a !== '') : filterGraphArgs.filter((a) => a !== ''),
     ws
   );
+
   ws.write(`filterGraphAndEncode: --------------------------------------------------\n${stdout}\n\n`);
   // record specs of clean video.
-  await recordMetadata(state.cleanVideoName, ws);
+  args?.copy
+    ? await recordMetadata(`${name}-withSubtitle.${ext}`, ws)
+    : await recordMetadata(state.cleanVideoName, ws);
   return;
 }
 

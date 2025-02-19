@@ -32,7 +32,7 @@
         args,
         cleanSubName: `${name}-clean.srt`,
         cleanVideoName: `${name}-clean.mp4`,
-        ext,
+        ext: ext.toLowerCase(),
         name,
         logName,
         subName: `${name}.srt`,
