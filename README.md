@@ -70,10 +70,11 @@ node clean.js --cpu --h265 --quality=28 --audio-number=1 --subtitle-number=1
 - **Extra Cuts**
   - If you would like to take out other parts (e.g. nudity, drugs, violence...), add the time to the subtitles file.
   - `6` <-- Can be any number, but must be a number.
-  - `00:00:34,000 --> 00:01:56,000` <-- `start --> end` the spacing and format must be exact.
+  - `00:00:34,000 --> 00:01:56,000` // the spacing and format must be exact. `start --> end` timestamp.
     - `00:00:00,000` <-- hours:minutes:seconds,milliseconds
     - **Caution!** Do not let times overlap with other subtitles. Remove the subtitles within the cut section.
-  - `!remove!` <-- special key word.
+  - `!remove!` <-- special key word. Remove timestamp
+  - `!ignore!` <-- special key word. Ignore content, even if swearword.
 
 ```txt
 # Example of customer video removal timestamps.
