@@ -541,7 +541,7 @@ function getVideoNames() {
   const vidext = ['\\.mp4$', '\\.mkv$', '\\.avi$', '\\.webm$'];
   const extRegex = new RegExp(vidext.join('|'));
   // filter out videos made from the program.
-  const avoidVideos = ['output', 'clean', 'temp', 'sanitize'];
+  const avoidVideos = ['output', 'clean', 'temp', 'sanitize', 'withSubtitle'];
   // create video list, filtering videos.
   const avoidRegex = new RegExp(avoidVideos.map((a) => vidext.map((v) => `${a}${v}`).join('|')).join('|'));
   const videos = fs
