@@ -21,7 +21,7 @@
   for (const video of videos) {
     const start = new Date().getTime();
     console.log(video);
-    const { name, ext } = getName(video);
+    const { name, ext } = getName(video); // ext is lowercased.
     const logName = `${name}.log`;
     const ws = fs.createWriteStream(logName);
     args?.zip ? (args.clean = true) : '';
@@ -34,7 +34,7 @@
         args,
         cleanSubName: `${name}-clean.srt`,
         cleanVideoName: `${name}-clean.mp4`,
-        ext: ext.toLowerCase(),
+        ext,
         name,
         logName,
         subName: `${name}.srt`,

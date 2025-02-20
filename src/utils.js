@@ -119,9 +119,9 @@ function fixDecimal(num) {
  * Drop marked frames and Re-encode video.
  * FFmpeg compares each frame number to see if it is 'between' the two numbers.
  * The FFmpeg 'between' function acts as a filter. It compares the current frame time, and the between(start, stop). If number is 'between' the two numbers(inclusive), frame is passed to encoder.
- * @param {string} name Video name without extension.
- * @param {string} ext Video extension.
- * @param {string[]} cuts  Video remove sections. {start, end}.
+ * @param {string} state Object.
+ * @param {string} ws write stream.
+ * @param {string[]} keeps  Video remove sections. {start, end}.
  * @returns Clean video name.
  */
 async function filterGraphAndEncode(state, ws, keeps = []) {
@@ -294,68 +294,6 @@ async function recordMetadata(name, ws) {
 }
 
 /**
- * Read video metadata and match specs.
- * @param name string. video name
- * @param args object. args passed in
- * @param ws function. write to log
- * @returns returns video specs object.
- */
-async function getMetadata(name, args, ws) {
-  // prettier-ignore
-  const options = [
-    '-v', 'quiet',
-    '-hide_banner',
-    '-show_format',
-    '-show_streams',
-    '-of','json',
-    name,
-  ];
-  const specs = await spawnShell('ffprobe', options, ws, false);
-  // separate video/audio
-  const meta = JSON.parse(specs);
-  const audioNumber = args?.['audio-number'] ? +args['audio-number'] + 1 : 1;
-  const video = meta?.streams[0];
-  const audio = meta?.streams[audioNumber];
-
-  // Get Video Frame Rate
-  let frameRate = 24;
-  const frameRateString = video?.['r_frame_rate'];
-  const frameRates = frameRateString?.split('/');
-  if (frameRates.length !== 2) throw new Error('Video Frame Rate not Found.');
-  const [numerator, denominator] = frameRates;
-  // verify frame rate is a number or throw error before 'eval'.
-  if (!Number.isNaN(+numerator) && !Number.isNaN(+denominator))
-    frameRate = +(+numerator / +denominator).toFixed(3); // get frames per second.
-  else ws.write(`Frame Rate Not Found. -----------------------------\n\n`);
-
-  // Audio
-  // Sample Rate
-  let audioSampleRate = +audio?.['sample_rate'];
-  // Bit Rate
-  let audioBitRate = args?.['audio-bitrate'] ? args['audio-bitrate'] : +audio?.['bit_rate'];
-  // Codec Name
-  let audioCodec = args?.['audio-codec'] ? args['audio-codec'] : audio?.['codec_name'];
-  // If audio not listed. use default.
-  if (Number.isNaN(audioSampleRate) || Number.isNaN(audioBitRate) || !audioCodec) {
-    ws.write(
-      `Audio Codec Problem. Using defaults. -----------------------\nAudio Sample Rate: ${audioSampleRate}\nAudio Bit Rate: ${audioBitRate}\nAudio Codec: ${audioCodec}\n\n`
-    );
-    audioSampleRate = 48000;
-    audioBitRate = args?.['audio-bitrate'] ? args['audio-bitrate'] : '448k';
-    audioCodec = 'ac3';
-  }
-
-  const metadata = {
-    frameRateString,
-    frameRate,
-    audioSampleRate,
-    audioBitRate,
-    audioCodec,
-  };
-  return metadata;
-}
-
-/**
  * Convert cmd line arguments into an object.
  * @returns object: { key1: value, key2: value }
  *  -if argument passed without value, value will be true.
@@ -390,7 +328,7 @@ function getArgs() {
  * @returns video cut points array.
  */
 async function getCuts(state, ws) {
-  const { name, args, ext, frameRate, subName, cleanSubName } = state;
+  const { name, args, ext, frameRate, subName, cleanSubName, videoMeta } = state;
   // turn subtitles into string[].
   const subtitles = splitSubtitles(subName, ws);
   ws.write('Swear Words Keeps ----------------------------------------------\n\tSRT Time\tSeconds\tFrame\n');
@@ -456,10 +394,9 @@ async function getCuts(state, ws) {
     // to debug time scale.
     keepStr += `index: ${i}, \tid: ${id}\ts: ${s},\tstart: ${startSeconds}s, ${start}\tend: ${endSeconds}s, ${end}\t\tTotalSecondsRemoved: ${totalSecondsRemoved}s.\n`;
   }
-  // push to end of video
-  const duration = await getVideoDuration(name, ext, ws);
+
   // if (s < duration) keeps.push(`between(t,${s},${Math.floor(duration)})`);
-  if (s < duration) keeps.push([s, Math.floor(duration)]);
+  if (s < videoMeta.duration) keeps.push([s, Math.floor(videoMeta.duration)]);
   ws.write(`Keep Video Segments ---------------------------------------\n${JSON.stringify(keeps)}\n\n`);
 
   // print between times when debug.
@@ -491,13 +428,83 @@ ${text}
 }
 
 /**
+ * Read video metadata and match specs.
+ * @param name string. video name. Includes ext.
+ * @param args object. args passed in
+ * @param ws function. write to log
+ * @returns returns video specs object.
+ */
+async function getMetadata(videoName, args, ws) {
+  const { name, ext } = getName(videoName);
+  // prettier-ignore
+  const options = [
+    '-v', 'quiet',
+    '-hide_banner',
+    '-show_format',
+    '-show_streams',
+    '-of','json',
+    videoName,
+  ];
+  const specs = await spawnShell('ffprobe', options, ws, false);
+  // separate video/audio
+  const meta = JSON.parse(specs);
+  const audioNumber = args?.['audio-number'] ? +args['audio-number'] + 1 : 1;
+  const video = meta?.streams[0];
+  const audio = meta?.streams[audioNumber];
+
+  // Get Video Frame Rate
+  let frameRate = 24;
+  const frameRateString = video?.['r_frame_rate'];
+  const frameRates = frameRateString?.split('/');
+  if (frameRates.length !== 2) throw new Error('Video Frame Rate not Found.');
+  const [numerator, denominator] = frameRates;
+  // verify frame rate is a number or throw error before 'eval'.
+  if (!Number.isNaN(+numerator) && !Number.isNaN(+denominator))
+    frameRate = +(+numerator / +denominator).toFixed(3); // get frames per second.
+  else ws.write(`Frame Rate Not Found. -----------------------------\n\n`);
+
+  // Audio
+  // Sample Rate
+  let audioSampleRate = +audio?.['sample_rate'];
+  // Bit Rate
+  let audioBitRate = args?.['audio-bitrate'] ? args['audio-bitrate'] : +audio?.['bit_rate'];
+  // Codec Name
+  let audioCodec = args?.['audio-codec'] ? args['audio-codec'] : audio?.['codec_name'];
+  // If audio not listed. use default.
+  if (Number.isNaN(audioSampleRate) || Number.isNaN(audioBitRate) || !audioCodec) {
+    ws.write(
+      `Audio Codec Problem. Using defaults. -----------------------\nAudio Sample Rate: ${audioSampleRate}\nAudio Bit Rate: ${audioBitRate}\nAudio Codec: ${audioCodec}\n\n`
+    );
+    audioSampleRate = 48000;
+    audioBitRate = args?.['audio-bitrate'] ? args['audio-bitrate'] : '448k';
+    audioCodec = 'ac3';
+  }
+
+  // Video Duration
+  // push to end of video
+  const duration = await getVideoDuration(name, ext, ws);
+  const time = secondsToTime(duration);
+
+  const metadata = {
+    frameRateString,
+    frameRate,
+    audioSampleRate,
+    audioBitRate,
+    audioCodec,
+    duration,
+    time,
+  };
+  return metadata;
+}
+
+/**
  * Split video name and extension.
  * @param {string} name video name and extension.
  * @returns object: { name: string, ext: string }
  */
 function getName(name) {
   const videoName = name.split('.');
-  const ext = videoName.pop();
+  const ext = videoName.pop().toLowerCase();
   // video name may have more than one decimal in name.
   return { name: videoName.join('.'), ext };
 }
@@ -505,7 +512,7 @@ function getName(name) {
 /**
  * Use ffprobe to extract video seconds.milliseconds from metadata.
  * @param {string} video name including extension.
- * @returns string. time in sec.milli
+ * @returns number. Time in seconds.milliseconds
  */
 async function getVideoDuration(name, ext, ws) {
   // MKV containers do not write duration to header. Must use 'format' option.
@@ -527,7 +534,7 @@ async function getVideoDuration(name, ext, ws) {
     ws.write(`Duration was NaN: ${duration}\n\n`);
     throw new Error(`Duration was NaN: ${duration}`);
   }
-  ws.write(`Video Length: Sec.Milli: ${duration}, Time: ${secondsToTime(duration)}\n\n`);
+  ws.write(`Video Length: Seconds.Milliseconds: ${duration}, Time: ${secondsToTime(duration)}\n\n`);
 
   return duration;
 }
