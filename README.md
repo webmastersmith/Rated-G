@@ -1,7 +1,7 @@
 # Rated-G
 
 - Simple script that removes undesirable video and audio. Swear words are removed from the subtitles. Inspired by [Video Swear Jar](https://github.com/jveldboom/video-swear-jar).
-- Subtitles are faster and can be more accurate than AI transcribing.
+- Using subtitles is faster and can be more accurate than AI transcribing.
 
 ## Dependencies
 
@@ -13,6 +13,8 @@
 - For FFmpeg to user your GPU, you must download **your GPU Video codec package** and compile FFmpeg with GPU options enabled.
   - e.g. **NVIDIA GeForce 1050Ti** codec package: [CUDA Toolkit 12.6](https://developer.nvidia.com/cuda-downloads)
   - Get the toolkit for **your GPU**, or use the `--cpu` flag to only use the CPU.
+- [7zip](https://7-zip.org/download.html) installed if you want to use the `--zip` flag.
+  - To verify if 7zip is added to path: open cmd/shell: `7z` // some linux versions can be `7za`.
 
 ## Simple Start
 
