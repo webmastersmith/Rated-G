@@ -58,6 +58,10 @@ node clean.js --subtitle-number=0 # 0 default. First subtitle.
 # view subtitles with ffprobe. Built into ffmpeg. First subtitle is index 0.
   # ffprobe -loglevel error -select_streams s -show_entries stream=index:stream_tags=language -of csv=p=0 video.mkv
 
+# Swear Words
+node clean.js --ignore="word1 word2 word3" # removes swear words from list.
+node clean.js --add="word1 word2 word3" # add swear words to remove list.
+
 # Example
 node clean.js --cpu --h265 --quality=28 --audio-number=1 --subtitle-number=1
 ```

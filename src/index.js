@@ -1,6 +1,7 @@
 (async function () {
   const fs = require('fs');
   const {
+    addSwearWords,
     convertMsToTime,
     deleteFiles,
     extractSubtitle,
@@ -10,6 +11,7 @@
     getName,
     getMetadata,
     getVideoNames,
+    ignoreSwearWords,
     recordMetadata,
     transcribeVideo,
     zipVideo,
@@ -17,6 +19,9 @@
 
   const args = getArgs();
   const videos = getVideoNames();
+  // Modify Swear Word list.
+  if (args?.ignore) ignoreSwearWords(args.ignore);
+  if (args?.add) addSwearWords(args.add);
 
   for (const video of videos) {
     const start = new Date().getTime();

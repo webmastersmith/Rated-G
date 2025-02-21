@@ -1,5 +1,14 @@
 const fs = require('fs');
-const swearWords = require('./swear-words.json');
+let swearWords = require('./swear-words.json');
+
+/**
+ * Add SwearWords to list.
+ * @param {string[]} words array of strings to add to swearWords list.
+ */
+function addSwearWords(words) {
+  if (!Array.isArray(words)) words = words.split(' ');
+  swearWords = swearWords.concat(words);
+}
 
 /**
  * Subtract or add floats.
@@ -306,12 +315,12 @@ function getArgs() {
       .join(' ')
       .split(/ -{1,2}/)
       .map((arg) => {
-        // console.log('arg', arg);
+        console.log('arg', arg);
         const kv = arg
           .trim()
           .toLowerCase()
           .replace(/^-{1,2}/, '')
-          .split(/\s|=/);
+          .split(/=/);
         // console.log('kv', kv);
         if (kv.length < 2) kv.push(true);
         return kv;
@@ -560,6 +569,16 @@ function getVideoNames() {
 }
 
 /**
+ * Remove SwearWords from list. When processing video.
+ * @param {string[]} words array of strings to remove from swearWords list.
+ */
+function ignoreSwearWords(words) {
+  if (!Array.isArray(words)) words = words.split(' ').map((word) => word.toLowerCase());
+  swearWords = swearWords.filter((swear) => !words.some((word) => swear.includes(word)));
+  // console.log(swearWords);
+}
+
+/**
  * Convert seconds,milli back to Time.
  * @param {number} time Time in seconds and milliseconds
  * @returns string. '00:00:00,000'
@@ -732,6 +751,7 @@ async function zipVideo(state, ws) {
 }
 
 module.exports = {
+  addSwearWords,
   containsSwearWords,
   convertMsToTime,
   deleteFiles,
@@ -743,6 +763,7 @@ module.exports = {
   getMetadata,
   getVideoDuration,
   getVideoNames,
+  ignoreSwearWords,
   recordMetadata,
   spawnShell,
   transcribeVideo,
