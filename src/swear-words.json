@@ -14,7 +14,7 @@
   "cunnilingus",
   "cunt",
   "damn\\w*",
-  "(?<!charles )dick\\w*?(?! chen)",
+  "(?<!charles )dick(?!ens)\\w*(?! chen)",
   "dildo",
   "dyke",
   "dumbass.*",
