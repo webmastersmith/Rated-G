@@ -1,5 +1,5 @@
-(async function () {
-  const fs = require('fs');
+(async () => {
+  const fs = require('node:fs');
   const {
     addSwearWords,
     convertMsToTime,
@@ -29,7 +29,7 @@
     const { name, ext } = getName(video); // ext is lowercased.
     const logName = `${name}.log`;
     const ws = fs.createWriteStream(logName);
-    args?.zip ? (args.clean = true) : '';
+    args.clean = args?.zip === true;
     try {
       // log args.
       ws.write(`Video Names ------------------------------------\n${videos.join('\n')}\n\n`);

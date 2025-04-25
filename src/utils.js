@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('node:fs');
 let swearWords = require('./swear-words.json');
 
 /**
@@ -463,22 +463,22 @@ async function getMetadata(videoName, args, ws) {
 
   // Get Video Frame Rate
   let frameRate = 24;
-  const frameRateString = video?.['r_frame_rate'];
+  const frameRateString = video?.r_frame_rate;
   const frameRates = frameRateString?.split('/');
   if (frameRates.length !== 2) throw new Error('Video Frame Rate not Found.');
   const [numerator, denominator] = frameRates;
   // verify frame rate is a number or throw error before 'eval'.
   if (!Number.isNaN(+numerator) && !Number.isNaN(+denominator))
     frameRate = +(+numerator / +denominator).toFixed(3); // get frames per second.
-  else ws.write(`Frame Rate Not Found. -----------------------------\n\n`);
+  else ws.write('Frame Rate Not Found. -----------------------------\n\n');
 
   // Audio
   // Sample Rate
-  let audioSampleRate = +audio?.['sample_rate'];
+  let audioSampleRate = +audio?.sample_rate;
   // Bit Rate
-  let audioBitRate = args?.['audio-bitrate'] ? args['audio-bitrate'] : +audio?.['bit_rate'];
+  let audioBitRate = args?.['audio-bitrate'] ? args['audio-bitrate'] : +audio?.bit_rate;
   // Codec Name
-  let audioCodec = args?.['audio-codec'] ? args['audio-codec'] : audio?.['codec_name'];
+  let audioCodec = args?.['audio-codec'] ? args['audio-codec'] : audio?.codec_name;
   // If audio not listed. use default.
   if (Number.isNaN(audioSampleRate) || Number.isNaN(audioBitRate) || !audioCodec) {
     ws.write(
@@ -524,8 +524,8 @@ function getName(name) {
  * @returns number. Time in seconds.milliseconds
  */
 async function getVideoDuration(name, ext, ws) {
-  // MKV containers do not write duration to header. Must use 'format' option.
-  const isMKV = ext === 'mkv';
+  // MKV and AVI containers do not write duration to header. Must use 'format' option.
+  const isMKV = ext === 'mkv' ? true : ext === 'avi';
   // prettier-ignore
   const durationArgs = [
     '-v', 'quiet',
