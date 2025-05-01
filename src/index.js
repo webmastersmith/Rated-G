@@ -11,17 +11,16 @@
     getName,
     getMetadata,
     getVideoNames,
-    ignoreSwearWords,
     recordMetadata,
     transcribeVideo,
     zipVideo,
   } = require('./utils.js');
+  const swearWords = require('./swear-words.json');
+
 
   const args = getArgs();
   const videos = getVideoNames();
   // Modify Swear Word list.
-  if (args?.ignore) ignoreSwearWords(args.ignore);
-  if (args?.add) addSwearWords(args.add);
 
   for (const video of videos) {
     const start = new Date().getTime();
@@ -43,6 +42,8 @@
         name,
         logName,
         subName: `${name}.srt`,
+        swearWordString: addSwearWords(swearWords, args?.add?.split(' ') ?? []),
+        ignoreWords: args?.ignore?.split(' ') ?? [],
         transcribeVideo: false,
         video,
         videoMeta,

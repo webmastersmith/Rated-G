@@ -1,13 +1,14 @@
 const fs = require('node:fs');
-let swearWords = require('./swear-words.json');
 
 /**
  * Add SwearWords to list.
  * @param {string[]} words array of strings to add to swearWords list.
  */
-function addSwearWords(words) {
-  if (!Array.isArray(words)) words = words.split(' ');
-  swearWords = swearWords.concat(words);
+function addSwearWords(_swearWords, _newSwearWords = []) {
+  // if not an array, create array.
+  const newSwearWords = !Array.isArray(_newSwearWords) ? _newSwearWords.split(' ') : _newSwearWords;
+  const swearWords = _swearWords.concat(newSwearWords);
+  return swearWords.join('|');
 }
 
 /**
@@ -31,10 +32,13 @@ function addSubtractSec(operator = '-', sec1, sec2) {
  * @param {string} text -words checked for swear words.
  * @returns boolean (true|false)
  */
-function containsSwearWords(text) {
-  const pattern = swearWords.join('|');
-  const regex = new RegExp(`\\b(?:${pattern})\\b`, 'iu'); // 'i' flag for case-insensitive matching 'u' for unicode.
-  if (regex.test(text) || /!remove!/.test(text)) return true;
+function containsSwearWords(state, text) {
+  const { swearWordString, ignoreWords} = state;
+  const swearWordRegex = new RegExp(`\\b(?:${swearWordString})\\b`, 'iu');
+  // if text includes 'ignore word' -not a swear word.
+  if (ignoreWords.some((ignoreWord) => new RegExp(`\\b${ignoreWord}\\b`, 'i').test(text))) return false;
+  if (text.includes('!ignore!')) return false;
+  if (swearWordRegex.test(text) || /!remove!/.test(text)) return true;
   return false;
 }
 
@@ -357,7 +361,7 @@ async function getCuts(state, ws) {
     let { id, start, end, text } = sub;
     const startSeconds = Math.floor(timeToSeconds(start));
     const endSeconds = Math.ceil(timeToSeconds(end));
-    if (containsSwearWords(text) && !text.includes('!ignore!')) {
+    if (containsSwearWords(state, text)) {
       // invert cuts.
       if (startSeconds === 0) {
         // jump to next endSeconds.
@@ -569,16 +573,6 @@ function getVideoNames() {
 }
 
 /**
- * Remove SwearWords from list. When processing video.
- * @param {string[]} words array of strings to remove from swearWords list.
- */
-function ignoreSwearWords(words) {
-  if (!Array.isArray(words)) words = words.split(' ').map((word) => word.toLowerCase());
-  swearWords = swearWords.filter((swear) => !words.some((word) => swear.includes(word)));
-  // console.log(swearWords);
-}
-
-/**
  * Convert seconds,milli back to Time.
  * @param {number} time Time in seconds and milliseconds
  * @returns string. '00:00:00,000'
@@ -763,7 +757,6 @@ module.exports = {
   getMetadata,
   getVideoDuration,
   getVideoNames,
-  ignoreSwearWords,
   recordMetadata,
   spawnShell,
   transcribeVideo,
