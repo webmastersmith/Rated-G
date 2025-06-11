@@ -461,9 +461,16 @@ async function getMetadata(videoName, args, ws) {
   const specs = await spawnShell('ffprobe', options, ws, false);
   // separate video/audio
   const meta = JSON.parse(specs);
-  const audioNumber = args?.['audio-number'] ? +args['audio-number'] + 1 : 1;
-  const video = meta?.streams[0];
-  const audio = meta?.streams[audioNumber];
+  const audioNumber = args?.['audio-number'] ? +args['audio-number'] + 1 : 0;
+  // metadata may not be in the order you expect. organize.
+  const videos = [];
+  const audios = [];
+  for (const stream of meta?.streams) {
+    if (stream?.codec_type?.toLowerCase() === 'video') videos.push(stream)
+    if (stream?.codec_type?.toLowerCase() === 'audio') audios.push(stream)
+  }
+  const video = videos[0];
+  const audio = audios[audioNumber];
 
   // Get Video Frame Rate
   let frameRate = 24;
