@@ -49,6 +49,7 @@ node clean.js --audio-bitrate=128k # 128k default. Set custom bit rate for audio
 node clean.js --audio-number=0 # 0 default. First audio track.
 node clean.js --audio-codec=aac # default: Rated-G will use audio metadata to match original codec unless you override. Options: aac, ac3, flac, opus or any valid ffmpeg audio codec.
 # Note: Rated-G will try to use the original audio codec. Experimental mode is on.
+node clean.js --audio-experimental # turn on --strict-experimental flag. This allows codecs that are not main stream.
 ## Some codecs are experimental because they are not supported by some vendors, so codec may not play on your device.
 
 # Metadata and Subtitles
@@ -93,6 +94,19 @@ node clean.js --cpu --h265 --quality=28 --audio-number=1 --subtitle-number=1
 9
 00:02:36,000 --> 00:02:39,000
 Subtitle text you want to keep. !ignore!
+```
+
+## Blurring Video Segments
+
+- blurred time section (e.g. `00:02:36,000 --> 00:02:39,000`):
+- The _`!blur!`_ timestamp will be removed from subtitle-clean.srt. Subtitles timestamp overlap will not be affected.
+- The audio will not be affected.
+
+```txt
+# Blurring video example.
+135
+00:02:36,000 --> 00:02:39,000
+!blur!
 ```
 
 ## FFmpeg Encoding
