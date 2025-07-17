@@ -294,7 +294,7 @@ async function filterGraphAndEncode(state, ws, timeStamps) {
 			finalCuts.splice(
 				1,
 				0,
-				`${inputVideo}gblur=sigma=100:enable='${blurBetweens.join("+")}',split${splits.join("")};${cutBlock}`,
+				`${inputVideo}gblur=sigma=100:enable='${blurBetweens.join("+")}',split=${pairCount}${splits.join("")};${cutBlock}`,
 			);
 		}
 
