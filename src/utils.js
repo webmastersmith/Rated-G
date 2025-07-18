@@ -2,8 +2,10 @@ const { time } = require("node:console");
 const fs = require("node:fs");
 
 /**
- * Add SwearWords to list.
- * @param {string[]} words array of strings to add to swearWords list.
+ * Add a new swear word to list. Can use Javascript regex on swear word as well.
+ * @param {string[]} _swearWords array of regex swear words.
+ * @param {string} _newSwearWords the swear word to add to list. Can use JS regex.
+ * @returns Swear word regex string.
  */
 function addSwearWords(_swearWords, _newSwearWords = []) {
 	// if not an array, create array.
@@ -15,11 +17,11 @@ function addSwearWords(_swearWords, _newSwearWords = []) {
 }
 
 /**
- * Subtract or add floats.
+ * Subtract or add floats. Automatically removes floats, performs math, turns back into float.
  * @param {string} operator +|-
  * @param {float} sec1 Seconds.milliseconds
  * @param {float} sec2 Seconds.milliseconds
- * @returns float. seconds.milliseconds to third decimal place.
+ * @returns float: seconds.milliseconds to third decimal place.
  */
 function addSubtractSec(operator, sec1, sec2) {
 	const t1 = fixDecimal(sec1 * 1000);
@@ -31,8 +33,9 @@ function addSubtractSec(operator, sec1, sec2) {
 }
 
 /**
- * Search text for swear words.
- * @param {string} text -words checked for swear words.
+ * Search text for swear words. Return true if text contains a swear word.
+ * @param {object} state, Rated-G state.
+ * @param {string} text -words to check for swear words.
  * @returns boolean (true|false)
  */
 function containsSwearWords(state, text) {
@@ -50,6 +53,11 @@ function containsSwearWords(state, text) {
 	return false;
 }
 
+/**
+ * Convert milliseconds back to timestamp.
+ * @param {number} milliseconds timestamp that has been converted to milliseconds.
+ * @returns timestamp
+ */
 function convertMsToTime(milliseconds) {
 	function padTo2Digits(num) {
 		return num.toString().padStart(2, "0");
@@ -68,8 +76,10 @@ function convertMsToTime(milliseconds) {
 }
 
 /**
- * File deletion.
+ * File deletion and log results.
  * @param {string[]} files File names to be deleted.
+ * @param {function} ws write stream.
+ * @returns undefined
  */
 function deleteFiles(files, ws) {
 	ws.write(`Deleting files: ${files.join(", ")}\n`);
@@ -92,10 +102,9 @@ function deleteFiles(files, ws) {
 /**
  * Extracts subtitles from video.
  * The function is called when no subtitle is found. It tries to extract subtitle from video. If unsuccessful, calls transcribeVideo function.
- * @param {string} video Video name and extension.
- * @param {string} subName output name of subtitle
- * @param {number} subNumber location of where subtitle is found.
- * @returns boolean. If false, transcribeVideo will be called.
+ * @param {object} state. Rated-G state.
+ * @param {function} ws write stream.
+ * @returns boolean. If false, no subtitles were found and the transcribeVideo function will be called.
  */
 async function extractSubtitle(state, ws) {
 	const { video, args, subName } = state;
@@ -117,8 +126,7 @@ async function extractSubtitle(state, ws) {
 		`Could not find subtitle ${subName}. Trying to extract from ${video}.\n\n`,
 	);
 	try {
-		// will reject if no subtitle found.
-		const stdout = await spawnShell("ffmpeg", ffmpegArgs, ws);
+		const stdout = await spawnShell("ffmpeg", ffmpegArgs, ws); // will reject if no subtitle found.
 		ws.write(`extractSubtitles:\nstdout: ${stdout}\n\n`);
 		console.log("\x1b[34m", `Extracted ${subName}`);
 		console.log("\x1b[0m", "");
@@ -138,18 +146,17 @@ async function extractSubtitle(state, ws) {
  * @returns float: same number, corrected to third decimal point.
  */
 function fixDecimal(num) {
-	// biome-ignore lint/style/useTemplate:
+	// biome-ignore lint/style/useTemplate: keep format the same for ease of viewing.
 	return +(Math.round(num + "e+3") + "e-3");
 }
 
 /**
  * Drop marked frames and Re-encode video.
- * FFmpeg compares each frame number to see if it is 'between' the two numbers.
- * The FFmpeg 'between' function acts as a filter. It compares the current frame time, and the between(start, stop). If number is 'between' the two numbers(inclusive), frame is passed to encoder.
- * @param {string} state Object.
+ * FFmpeg finds the nearest 'keyframe' to split video.
+ * @param {object} state Rated-G state.
  * @param {string} ws write stream.
- * @param {string[]} keeps  Video remove sections. {start, end}.
- * @returns Clean video name.
+ * @param {string[]} timeStamps  Video remove sections. {keeps: [start, end], blurs: [start, end]}.
+ * @returns
  */
 async function filterGraphAndEncode(state, ws, timeStamps) {
 	const {
@@ -235,20 +242,7 @@ async function filterGraphAndEncode(state, ws, timeStamps) {
 		"language=eng",
 	];
 
-	// if (blurs.length > 0) {
-	// 	const inputBlurs = [];
-	// 	for (const blurTime of blurs) {
-	// 		// create for each blur spot.
-	// 		blurBetweens.push();
-	// 	}
-	// 	// filterComplexBlurs = [
-	// 	// 	"-filter_complex",
-	// 	// 	`${inputVideo}gblur=sigma=100:enable='${blurBetweens.join("+")}'[fg],split`,
-	// 	// ];
-	// }
-
 	// Filter_Complex blurs
-	// Working Code: -filter_complex "[0:v]gblur=sigma=100:enable='between(t,9,16)+between(t,18,31)',split[b0v][b1v];[b0v]trim=start=0:end=11,setpts=PTS-STARTPTS[0v];[0:a:0]atrim=start=0:end=11,asetpts=PTS-STARTPTS[0a];[b1v]trim=start=14:end=120,setpts=PTS-STARTPTS[1v];[0:a:0]atrim=start=14:end=120,asetpts=PTS-STARTPTS[1a];[0v][0a][1v][1a] concat=n=2:v=1:a=1[outv][outa]" -map [outv] -map [outa] -map 1:s:0 -strict experimental output.mp4
 	// 1. To enable multiple blurs, you have to split a new video for each 'trim' input.
 	// 2. get 'blurBetweens'
 	// 3. get 'pairCount'

@@ -1,7 +1,8 @@
 # Rated-G
 
-- Simple script that removes undesirable video and audio. Swear words are removed from the subtitles. Inspired by [Video Swear Jar](https://github.com/jveldboom/video-swear-jar).
-- Using subtitles is faster and can be more accurate than AI transcribing.
+- Simple script that removes undesirable video, audio and subtitle text while keeping movie audio and subtitles in sync.
+- Inspired by [Video Swear Jar](https://github.com/jveldboom/video-swear-jar).
+- Using subtitles can be faster and more accurate than AI transcribing.
 
 ## Dependencies
 
@@ -16,10 +17,15 @@
 - [7zip](https://7-zip.org/download.html) installed if you want to use the `--zip` flag.
   - To verify if 7zip is added to path: open cmd/shell: `7z` // some linux versions can be `7za`.
 
+## FFmpeg Encoding
+
+- Once the video is cut, the timeline is broken. This can cause the audio and video to be out of sync during playback. Encoding fixes this.
+- GPU encoding is faster than CPU encoding. The [clean.js](https://raw.githubusercontent.com/webmastersmith/Rated-G/refs/heads/main/clean.js) script default encoding with a Nvidia GPU. If you get errors, find the codec that works for your pc hardware and fix the arguments in the **filterGraphAndEncode** function.
+
 ## Simple Start
 
-1. Copy [clean.js](https://raw.githubusercontent.com/webmastersmith/Rated-G/refs/heads/main/clean.js) in the directory with **video** and **subtitle**. (If you do not have subtitle file, _Video Swear Jar_ Docker image will be called to transcribe audio. [Docker](https://docs.docker.com/engine/install/) must be installed).
-   1. subtitles must have the same name as the video, with an `.srt` extension. (e.g. `video1.mp4`, `video1.srt`).
+1. Copy the [clean.js](https://raw.githubusercontent.com/webmastersmith/Rated-G/refs/heads/main/clean.js) file into the directory with **video** and **subtitle**. (If you do not have subtitle file, _Video Swear Jar_ Docker image will be called to transcribe audio. [Docker](https://docs.docker.com/engine/install/) must be installed).
+   1. **Note**: subtitles must have the same name as the video, with an `.srt` extension. (e.g. `video1.mp4`, `video1.srt`).
 2. run from command line in same directory: `node clean.js --cpu`
 
 ## Flags
@@ -71,10 +77,6 @@ node clean.js --cpu --h265 --quality=28 --audio-number=1 --subtitle-number=1
 
 - Most video subtitles can be found online. Make sure the subtitle matches the video. Cuts to video will be wrong if subtitle is wrong.
 - Sometimes subtitles do not provide perfect alignment, but their really close. Editing the subtitle file time can make sure to remove undesirable video and audio.
-- **Error** about reading subtitles:
-  - Check the subtitle name is the same as video name. (e.g. `video.mp4`, `video.srt`).
-  - The **subtitle file header is possible corrupted**. Copy contents to new file and save. Delete old file.
-- **Docker Error**: If no subtitles are found, [Video Swear Jar](https://github.com/jveldboom/video-swear-jar) image will be called to transcribe video. Docker engine must be installed and running.
 - **Extra Cuts**
   - If you would like to take out other parts (e.g. nudity, drugs, violence...), add the time to the subtitles file.
   - `6` <-- Can be any number, but must be a number.
@@ -84,11 +86,11 @@ node clean.js --cpu --h265 --quality=28 --audio-number=1 --subtitle-number=1
   - `!remove!` <-- special key word. Remove timestamp
   - `!ignore!` <-- special key word. Ignore content, even if swearword.
 
-```txt
+```sh
 # Example of customer video removal timestamps.
-6
-00:00:34,000 --> 00:01:56,000
-!remove!
+6 # must be a number. Can use any number.
+00:00:34,000 --> 00:01:56,000 # start time --> end time [hour:minute:second,millisecond]
+!remove! # special keyword.
 
 # Example of ignoring a swearword match.
 9
@@ -98,24 +100,24 @@ Subtitle text you want to keep. !ignore!
 
 ## Blurring Video Segments
 
-- blurred time section (e.g. `00:02:36,000 --> 00:02:39,000`):
-- The _`!blur!`_ timestamp will be removed from subtitle-clean.srt. Subtitles timestamp overlap will not be affected.
+- Blur the whole screen during 'blur timestamp'. This allows you to you to keep audio, while blurring video.
+- The blur timestamp will be removed from the output subtitle-clean.srt.
+- Blur timestamps can overlap with subtitles and subtitles will not be affected.
 - The audio will not be affected.
+- Blurred timestamp example ↓.
 
-```txt
+```sh
 # Blurring video example.
-135
-00:02:36,000 --> 00:02:39,000
-!blur!
+135 # must be a number. Can use any number.
+00:02:36,000 --> 00:02:39,000 # start time --> end time [hour:minute:second,millisecond]
+!blur! # special keyword.
 ```
-
-## FFmpeg Encoding
-
-- Once the video is cut, the timeline is broken. This can cause the audio and video to be out of sync during playback. Encoding fixes this.
-- GPU encoding is faster than CPU encoding. The script is already setup for encoding with a Nvidia GPU. If you get errors, find the codec that works for your pc hardware and fix the arguments in the **filterGraphAndEncode** function.
 
 ## Troubleshooting
 
 - **Partial Video Output**: downloaded video can have corrupted frames, yet still play. Re-encode video then re-run _clean.js_.
   - (e.g. `ffmpeg -y -i <video> -c:v libx264 -c:a aac -b:a 384k -ar 48000 <out-video>`)
 - **Subtitle Error**: downloaded subtitles can have a corrupted 'head' section, that FFmpeg will not be able to open. Copy file contents into new file.
+  - Check the subtitle name is the same as video name. (e.g. `video.mp4`, `video.srt`).
+  - The **subtitle file header is possible corrupted**. Copy contents to new file and save. Delete old file.
+- **Docker Error**: If no subtitles are found, [Video Swear Jar](https://github.com/jveldboom/video-swear-jar) image will be called to transcribe video. Docker engine must be installed and running.

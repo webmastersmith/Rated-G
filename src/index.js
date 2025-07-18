@@ -19,7 +19,6 @@
 
 	const args = getArgs();
 	const videos = getVideoNames();
-	// Modify Swear Word list.
 
 	for (const video of videos) {
 		const start = new Date().getTime();
@@ -43,7 +42,7 @@
 				name,
 				logName,
 				subName: `${name}.srt`,
-				swearWordString: addSwearWords(swearWords, args?.add?.split(" ") ?? []),
+				swearWordString: addSwearWords(swearWords, args?.add?.split(" ") ?? []), // Modify Swear Word list.
 				ignoreWords: args?.ignore?.split(" ") ?? [],
 				transcribeVideo: false,
 				video,
