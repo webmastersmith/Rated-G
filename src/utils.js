@@ -42,12 +42,12 @@ function containsSwearWords(state, text) {
 	const { swearWordString, ignoreWords } = state;
 	const swearWordRegex = new RegExp(`\\b(?:${swearWordString})\\b`, "iu");
 	// if text includes 'ignore word' -not a swear word.
-	if (
-		ignoreWords.some((ignoreWord) =>
-			new RegExp(`\\b${ignoreWord}\\b`, "i").test(text),
-		)
-	)
+	const ignoreWordRegex = new RegExp(`\\b${ignoreWord}\\b`, "ig");
+	if (ignoreWords.some((ignoreWord) => ignoreWordRegex.test(text))) {
+		// check if sentence has non-ignore swear word.
+		if (swearWordRegex.test(text.replaceAll(ignoreWordRegex, ""))) return true; // matches non-ignore swear word.
 		return false;
+	}
 	if (text.includes("!ignore!")) return false;
 	if (swearWordRegex.test(text) || /!remove!/.test(text)) return true;
 	return false;
