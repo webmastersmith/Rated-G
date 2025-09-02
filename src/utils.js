@@ -39,18 +39,24 @@ function addSubtractSec(operator, sec1, sec2) {
  * @returns boolean (true|false)
  */
 function containsSwearWords(state, text) {
+  // return early
+  if (text.includes('!ignore!')) return false;
+  // has !remove!, remove
+  if (text.includes('!remove!')) return true;
+
+  // Swear word check
 	const { swearWordString, ignoreWords } = state;
-	const swearWordRegex = new RegExp(`\\b(?:${swearWordString})\\b`, "iu");
-	// if text includes 'ignore word' -not a swear word.
-	const ignoreWordRegex = new RegExp(`\\b${ignoreWord}\\b`, "ig");
-	if (ignoreWords.some((ignoreWord) => ignoreWordRegex.test(text))) {
-		// check if sentence has non-ignore swear word.
-		if (swearWordRegex.test(text.replaceAll(ignoreWordRegex, ""))) return true; // matches non-ignore swear word.
-		return false;
-	}
-	if (text.includes("!ignore!")) return false;
-	if (swearWordRegex.test(text) || /!remove!/.test(text)) return true;
-	return false;
+  const swearWordRegex = new RegExp(`\\b(?:${swearWordString})\\b`, 'iu');
+  if (swearWordRegex.test(text)) {
+		// swear word may be 'ignore word'
+    if (ignoreWords.length > 0) {
+      const ignoreWordRegex = new RegExp(`\\b${ignoreWords.join('|')}\\b`, 'ig');
+      // Could have another swear word besides the ignore word.
+      return swearWordRegex.test(text.replaceAll(ignoreWordRegex, ''));
+    }
+    return true;
+  }
+  return false
 }
 
 /**

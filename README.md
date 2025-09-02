@@ -101,8 +101,8 @@ Subtitle text you want to keep. !ignore!
 ## Blurring Video Segments
 
 - Blur the whole screen during 'blur timestamp'. This allows you to you to keep audio, while blurring video.
-- The blur timestamp will be removed from the output subtitle-clean.srt.
-- Blur timestamps can overlap with subtitles and subtitles will not be affected.
+- Blur timestamps are removed from the subtitle file during build.
+- Blur timestamps can overlap with other subtitle timestamps without affecting them.
 - The audio will not be affected.
 - Blurred timestamp example ↓.
 

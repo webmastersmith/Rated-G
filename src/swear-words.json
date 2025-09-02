@@ -1,7 +1,8 @@
 [
   "arse",
   "ass",
-  "ass.?ho\\w*",
+  "ass.?h\\w*",
+  "ass.?f\\w*",
   "bitch\\w*",
   "bullshit\\w*",
   "blow.?job",
